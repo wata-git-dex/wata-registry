@@ -1,4 +1,5 @@
 import { partnerBranding } from "./partner-branding.js";
+import { formatDate, formatNumber, normalizeLanguage, translateText } from "./i18n.js";
 
 let portalBranding = { ...partnerBranding };
 
@@ -19,9 +20,13 @@ const themeToggle = document.querySelector("#themeToggle");
 const profileButton = document.querySelector("#profileButton");
 const menuButton = document.querySelector("#menuButton");
 const menuPanel = document.querySelector("#menuPanel");
+const languageMenuButton = document.querySelector("#languageMenuButton");
+const languageMenu = document.querySelector("#languageMenu");
 const isPortalHost = document.documentElement.dataset.product === "portal";
 const HUB_SNAPSHOT_KEY = "wata-tech-hub-snapshot-v1";
 const HUB_SNAPSHOT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+let currentLanguage = normalizeLanguage(localStorage.getItem("wata-language") || navigator.language);
+document.documentElement.lang = currentLanguage;
 document.title = isPortalHost ? "W.A.T.A. Partner Portal" : "W.A.T.A. Tech Hub";
 const initialRoute = isPortalHost ? location.hash.slice(1) : "";
 let selectedFilterId = initialRoute.startsWith("filter/") ? decodeURIComponent(initialRoute.slice(7)) : null;
@@ -59,13 +64,75 @@ function escapeHtml(value) {
 }
 
 function display(value, fallback = "—") {
-  return value == null || value === "" ? fallback : escapeHtml(value);
+  return value == null || value === "" ? translateText(fallback, currentLanguage) : escapeHtml(translateText(value, currentLanguage));
 }
 
 function date(value) {
-  if (!value) return "—";
-  const parsed = new Date(`${value}`.length === 10 ? `${value}T12:00:00Z` : value);
-  return Number.isNaN(parsed.valueOf()) ? display(value) : parsed.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+  return value ? escapeHtml(formatDate(value, currentLanguage)) : "—";
+}
+
+function number(value) {
+  return formatNumber(value, currentLanguage);
+}
+
+const textSources = new WeakMap();
+const attributeSources = new WeakMap();
+const translatableAttributes = ["aria-label", "title", "placeholder"];
+
+function translateDom(root = document) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    if (node.parentElement?.closest("script, style, [data-no-translate]")) continue;
+    const source = textSources.get(node) ?? node.nodeValue;
+    textSources.set(node, source);
+    const match = source.match(/^(\s*)(.*?)(\s*)$/su);
+    node.nodeValue = `${match[1]}${translateText(match[2], currentLanguage)}${match[3]}`;
+  }
+  const elements = root.querySelectorAll ? root.querySelectorAll("*") : [];
+  for (const element of elements) {
+    if (element.closest("[data-no-translate]")) continue;
+    let sources = attributeSources.get(element);
+    if (!sources) { sources = new Map(); attributeSources.set(element, sources); }
+    for (const attribute of translatableAttributes) {
+      if (!element.hasAttribute(attribute)) continue;
+      if (!sources.has(attribute)) sources.set(attribute, element.getAttribute(attribute));
+      element.setAttribute(attribute, translateText(sources.get(attribute), currentLanguage));
+    }
+  }
+}
+
+function syncLanguageControl() {
+  if (!languageMenuButton) return;
+  const label = translateText("Choose language", currentLanguage);
+  languageMenuButton.setAttribute("aria-label", label);
+  languageMenuButton.setAttribute("title", label);
+  languageMenu?.querySelectorAll("[data-language]").forEach(option => {
+    const active = option.dataset.language === currentLanguage;
+    option.classList.toggle("active", active);
+    option.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function syncLanguageUi() {
+  document.documentElement.lang = currentLanguage;
+  document.title = isPortalHost
+    ? (currentLanguage === "es" ? "Registro de Filtros W.A.T.A." : "W.A.T.A. Partner Portal")
+    : (currentLanguage === "es" ? "Centro Tecnológico W.A.T.A." : "W.A.T.A. Tech Hub");
+  translateDom(document);
+  if (state.session) setProfile();
+  else {
+    profileButton.querySelector("strong").textContent = translateText("Loading", currentLanguage);
+    profileButton.querySelector("small").textContent = translateText("Checking access", currentLanguage);
+  }
+  applyTheme(currentTheme(), false);
+  syncLanguageControl();
+}
+
+function applyLanguage(language, persist = true) {
+  currentLanguage = normalizeLanguage(language);
+  if (persist) localStorage.setItem("wata-language", currentLanguage);
+  updateConnectionState(false);
+  render();
 }
 
 function permittedPartnerIds() {
@@ -129,6 +196,10 @@ function partner() {
   return portalBranding[currentScope] || portalBranding.all;
 }
 
+function partnerDisplayName() {
+  return translateText(partner().name, currentLanguage);
+}
+
 function partnerMark() {
   const active = partner();
   if (active.logo) return `<span class="partner-mark"><img src="${escapeHtml(active.logo)}" alt="${escapeHtml(active.logoAlt || `${active.name} logo`)}"></span>`;
@@ -149,15 +220,20 @@ function applyTheme(theme, persist = true) {
   if (persist) localStorage.setItem("wata-theme", theme);
   const dark = theme === "dark";
   themeToggle.setAttribute("aria-pressed", String(dark));
+  themeToggle.setAttribute("aria-label", translateText("Switch color theme", currentLanguage));
   themeToggle.querySelector(".theme-icon").textContent = dark ? "☀" : "☾";
-  themeToggle.querySelector(".theme-label").textContent = dark ? "Light" : "Dark";
+  themeToggle.querySelector(".theme-label").textContent = currentLanguage === "es"
+    ? `Modo ${translateText(dark ? "Light" : "Dark", currentLanguage).toLowerCase()}`
+    : (dark ? "Light" : "Dark");
+  themeToggle.querySelector(".theme-mode").textContent = currentLanguage === "es" ? "" : "mode";
+  themeToggle.querySelector(".theme-help").textContent = translateText("Change app appearance", currentLanguage);
   document.querySelector('meta[name="theme-color"]').content = dark ? "#061226" : "#3052a4";
 }
 
 function setScopeOptions() {
   if (!scope) return;
   const allowed = permittedPartnerIds();
-  scope.innerHTML = allowed.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(portalBranding[id]?.name || id.toUpperCase())}</option>`).join("");
+  scope.innerHTML = allowed.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(translateText(portalBranding[id]?.name || id.toUpperCase(), currentLanguage))}</option>`).join("");
   if (!allowed.includes(currentScope)) currentScope = allowed[0] || "all";
   scope.value = currentScope;
   scope.disabled = allowed.length < 2;
@@ -170,7 +246,7 @@ function setProfile() {
   profileButton.querySelector(".avatar").textContent = initials;
   profileButton.querySelector("strong").textContent = name;
   const roleLabels = { founder: "W.A.T.A. Founder", app_user: "W.A.T.A. App User", wata_admin: "W.A.T.A. Admin", ambassador: "W.A.T.A. Ambassador", observer: "Observer · view only", partner_lead: "Partner Lead", team_member: "W.A.T.A. Team" };
-  profileButton.querySelector("small").textContent = roleLabels[state.session.role] || "W.A.T.A. member";
+  profileButton.querySelector("small").textContent = translateText(roleLabels[state.session.role] || "W.A.T.A. member", currentLanguage);
 }
 
 function sectionHeader(title, subtitle, action = "") {
@@ -191,10 +267,10 @@ function stats() {
   const filterCount = scoped(state.filters).length;
   const issueCount = scoped(state.issues).length;
   return `<div class="stat-grid">
-    <article class="stat"><span>Filters tracked</span><strong>${filterCount.toLocaleString()}</strong><small>Asset Registry</small></article>
-    <article class="stat"><span>Survey events</span><strong>${impact.surveys.toLocaleString()}</strong><small>${impact.distributions.toLocaleString()} distributions · ${impact.followups.toLocaleString()} follow-ups</small></article>
-    <article class="stat"><span>People reached</span><strong>${impact.people.toLocaleString()}</strong><small>${impact.families.toLocaleString()} recorded families</small></article>
-    <article class="stat"><span>Open issues</span><strong>${issueCount.toLocaleString()}</strong><small>${issueCount ? "Needs review" : "All clear"}</small></article>
+    <article class="stat"><span>Filters tracked</span><strong>${number(filterCount)}</strong><small>Asset Registry</small></article>
+    <article class="stat"><span>Survey events</span><strong>${number(impact.surveys)}</strong><small>${number(impact.distributions)} distributions · ${number(impact.followups)} follow-ups</small></article>
+    <article class="stat"><span>People reached</span><strong>${number(impact.people)}</strong><small>${number(impact.families)} recorded families</small></article>
+    <article class="stat"><span>Open issues</span><strong>${number(issueCount)}</strong><small>${issueCount ? "Needs review" : "All clear"}</small></article>
   </div>`;
 }
 
@@ -217,7 +293,13 @@ function portalView() {
 
 function toolIcon(tool) {
   const images = {
-    partner_portal: "assets/registry/icon-192.png"
+    watadex: "assets/watadex-icon-clean.svg",
+    partner_portal: "assets/registry/icon-192.png",
+    community: "assets/community-app-original.png",
+    impact_map: "assets/impact-map-icon.svg",
+    website: "assets/wata-website-icon.svg",
+    field_kit: "assets/field-app-original.png",
+    mwater: "assets/mwater-surveyor-icon.png"
   };
   if (images[tool.id]) return `<img src="${images[tool.id]}" alt="">`;
   return icons.hub;
@@ -279,14 +361,14 @@ function globalImpactMap() {
 
 function impactView() {
   const impact = impactForScope();
-  return `<div class="partner-summary">${partnerMark()}<div><h2>${escapeHtml(partner().name)}</h2><p>${escapeHtml(partner().subtitle)} · Authorized operating view</p></div></div>
+  return `<div class="partner-summary">${partnerMark()}<div><h2>${escapeHtml(partnerDisplayName())}</h2><p>${escapeHtml(translateText(partner().subtitle, currentLanguage))} · Authorized operating view</p></div></div>
     ${sectionHeader("Impact dashboard", "Live summaries from the W.A.T.A. Filter Registry.")}${stats()}
     ${sectionHeader("Program details", "Operational totals for the selected partner scope.")}
     <div class="stat-grid">
-      <article class="stat"><span>Communities</span><strong>${impact.communities.toLocaleString()}</strong><small>Recorded communities</small></article>
-      <article class="stat"><span>Active surveyors</span><strong>${impact.surveyors.toLocaleString()}</strong><small>Current field team</small></article>
-      <article class="stat"><span>Distribution surveys</span><strong>${impact.distributions.toLocaleString()}</strong><small>Recorded events</small></article>
-      <article class="stat"><span>Follow-up surveys</span><strong>${impact.followups.toLocaleString()}</strong><small>Recorded events</small></article>
+      <article class="stat"><span>Communities</span><strong>${number(impact.communities)}</strong><small>Recorded communities</small></article>
+      <article class="stat"><span>Active surveyors</span><strong>${number(impact.surveyors)}</strong><small>Current field team</small></article>
+      <article class="stat"><span>Distribution surveys</span><strong>${number(impact.distributions)}</strong><small>Recorded events</small></article>
+      <article class="stat"><span>Follow-up surveys</span><strong>${number(impact.followups)}</strong><small>Recorded events</small></article>
     </div>
     ${sectionHeader("Global impact map", "Organization-wide historical footprint · not limited to the selected partner scope.")}
     ${globalImpactMap()}
@@ -312,7 +394,7 @@ function filterRows(rows) {
 
 function filtersView() {
   const rows = countryScoped(state.filters);
-  return `${sectionHeader("Water filters", `${rows.length.toLocaleString()} Asset Registry records in ${partner().name}`)}
+  return `${sectionHeader("Water filters", `${number(rows.length)} Asset Registry records in ${partnerDisplayName()}`)}
     <div class="notice"><b>Trusted partner view</b><span>Approved partner leads can see household names and household size for their records. Health responses remain excluded.</span></div>
     <div class="panel"><div class="table-tools"><input class="search" id="filterSearch" type="search" placeholder="Search filter, country, deployment, community, or family">${countryFilters(state.filters)}</div><div class="table-scroll"><table><thead><tr><th>Filter ID</th><th>Country / program</th><th>Community</th><th>Family</th><th>People</th><th>Status</th><th>Distribution date</th><th>Next follow-up</th></tr></thead><tbody id="filterRows">${filterRows(rows)}</tbody></table></div></div>`;
 }
@@ -341,7 +423,7 @@ function filterDetailView() {
 
 function followupsView() {
   const rows = countryScoped(state.filters).filter(row => row.followup || row.followupStatus);
-  return `${sectionHeader("Follow-up schedule", `${rows.length.toLocaleString()} filter records with follow-up information.`)}
+  return `${sectionHeader("Follow-up schedule", `${number(rows.length)} filter records with follow-up information.`)}
     <div class="panel"><div class="table-tools">${countryFilters(state.filters)}</div><div class="table-scroll"><table><thead><tr><th>Filter ID</th><th>Country / program</th><th>Community</th><th>Last follow-up</th><th>Next follow-up</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.map(row => `<tr class="clickable-row" data-filter-id="${escapeHtml(row.recordId)}"><td class="id" data-label="Filter ID">${display(row.id)}</td>${contextCell(row)}<td data-label="Community">${display(row.community)}</td><td data-label="Last follow-up">${date(row.lastFollowup)}</td><td data-label="Next follow-up">${date(row.followup)}</td><td data-label="Status"><span class="pill ${statusClass(row.followupStatus)}">${display(row.followupStatus)}</span></td></tr>`).join("") : `<tr><td colspan="6" class="empty-state">No follow-up records match this partner and country selection.</td></tr>`}</tbody></table></div></div>`;
 }
 
@@ -351,7 +433,7 @@ function issuesTable(rows, controls = true) {
 
 function issuesView() {
   const rows = countryScoped(state.issues);
-  return `${sectionHeader("Data-quality issues", `${rows.length.toLocaleString()} portal-visible issues · operational IDs only`)}
+  return `${sectionHeader("Data-quality issues", `${number(rows.length)} portal-visible issues · operational IDs only`)}
     <div class="notice"><b>Designed for action</b><span>Issues show the affected filter, survey type, date, and status without exposing health responses.</span></div>${issuesTable(rows)}`;
 }
 
@@ -364,7 +446,7 @@ function settingsView() {
       <article class="help-card"><span>04</span><h3>Coming soon</h3><p>Community App and Field Kit stay visible as roadmap items but will not send you to a guessed or unfinished destination.</p></article>
     </div>
     <button class="retry-button" data-view="home">Back to your apps</button>`;
-  return `<div class="partner-summary">${partnerMark()}<div><h2>Settings & help</h2><p>${escapeHtml(partner().name)} · Portal guide</p></div></div>
+  return `<div class="partner-summary">${partnerMark()}<div><h2>Settings & help</h2><p>${escapeHtml(partnerDisplayName())} · Portal guide</p></div></div>
     ${sectionHeader("How this portal works", "A practical guide to navigating and interpreting the W.A.T.A. registry.")}
     <div class="help-grid">
       <article class="help-card"><span>01</span><h3>Choose a view</h3><p>W.A.T.A. admins and all-scope observers can switch between All W.A.T.A. and individual partners at the top. Partner leads and scoped observers only see the organizations approved for their Airtable email.</p></article>
@@ -404,8 +486,8 @@ function syncChrome() {
 }
 
 function render() {
-  if (state.loading) { app.innerHTML = loadingView(); return; }
-  if (state.error) { app.innerHTML = errorView(); document.querySelector("#retryButton")?.addEventListener("click", loadPortal); return; }
+  if (state.loading) { app.innerHTML = loadingView(); syncLanguageUi(); return; }
+  if (state.error) { app.innerHTML = errorView(); document.querySelector("#retryButton")?.addEventListener("click", loadPortal); syncLanguageUi(); return; }
   const views = { home: homeView, portal: portalView, impact: impactView, filters: filtersView, "filter-detail": filterDetailView, followups: followupsView, issues: issuesView, settings: settingsView };
   if (!isPortalHost && currentView !== "settings") currentView = "home";
   if (isPortalHost && currentView === "home") currentView = "portal";
@@ -421,7 +503,9 @@ function render() {
     const term = event.target.value.trim().toLowerCase();
     const rows = countryScoped(state.filters).filter(row => `${row.id} ${row.country} ${row.deployment} ${row.community} ${row.family}`.toLowerCase().includes(term));
     document.querySelector("#filterRows").innerHTML = filterRows(rows);
+    translateDom(document.querySelector("#filterRows"));
   });
+  syncLanguageUi();
 }
 
 function applyBootstrap(body) {
@@ -505,6 +589,25 @@ async function loadPortal({ background = false } = {}) {
 }
 
 document.addEventListener("click", event => {
+  if (event.target.closest("#languageMenuButton")) {
+    const open = languageMenu.hidden;
+    languageMenu.hidden = !open;
+    languageMenuButton.setAttribute("aria-expanded", String(open));
+    menuPanel.hidden = true;
+    menuButton.setAttribute("aria-expanded", "false");
+    return;
+  }
+  const languageTarget = event.target.closest("[data-language]");
+  if (languageTarget) {
+    languageMenu.hidden = true;
+    languageMenuButton.setAttribute("aria-expanded", "false");
+    applyLanguage(languageTarget.dataset.language);
+    return;
+  }
+  if (!event.target.closest(".language-picker")) {
+    languageMenu.hidden = true;
+    languageMenuButton.setAttribute("aria-expanded", "false");
+  }
   if (event.target.closest("#menuButton")) {
     const open = menuPanel.hidden;
     menuPanel.hidden = !open;
@@ -575,7 +678,7 @@ themeToggle.addEventListener("click", () => applyTheme(currentTheme() === "dark"
 function updateConnectionState(rerender = true) {
   const label = document.querySelector(".rail-foot span:last-child");
   const dot = document.querySelector(".status-dot");
-  if (label) label.textContent = navigator.onLine ? (state.error ? "Connection needed" : "Live · read-only") : "Offline app shell";
+  if (label) label.textContent = translateText(navigator.onLine ? (state.error ? "Connection needed" : "Live · read-only") : "Offline app shell", currentLanguage);
   if (dot) dot.classList.toggle("connected", navigator.onLine && !state.error);
   if (rerender) render();
 }
@@ -586,6 +689,7 @@ addEventListener("offline", updateConnectionState);
 if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
 
 applyTheme(currentTheme(), false);
+syncLanguageUi();
 const hubSnapshot = readHubSnapshot();
 if (hubSnapshot) {
   applyBootstrap(hubSnapshot);

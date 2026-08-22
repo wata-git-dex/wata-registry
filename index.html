@@ -13,7 +13,7 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/assets/registry/icon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/assets/registry/apple-touch-icon.png" sizes="180x180">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=19">
   <title>W.A.T.A. Filter Registry</title>
 </head>
 <body>
@@ -30,7 +30,7 @@
         <button data-view="followups" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/><path d="M19.5 11.5 17 9"/></svg>Follow-ups</button>
         <button data-view="issues" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5v.1"/></svg>Issues</button>
       </nav>
-      <div class="rail-foot">
+      <div class="rail-foot" data-no-translate>
         <span class="status-dot"></span>
         <span>Read-only preview</span>
       </div>
@@ -44,16 +44,23 @@
           <select id="scope" aria-label="Partner scope"></select>
         </div>
         <div class="top-menu">
+          <div class="language-picker" data-no-translate>
+            <button class="language-button" id="languageMenuButton" type="button" aria-label="Choose language" title="Choose language" aria-expanded="false" aria-controls="languageMenu"><span class="language-globe" aria-hidden="true">🌐</span></button>
+            <div class="language-menu" id="languageMenu" hidden>
+              <button type="button" data-language="en"><span aria-hidden="true">🇺🇸</span><strong>English</strong><span class="language-check" aria-hidden="true">✓</span></button>
+              <button type="button" data-language="es"><span aria-hidden="true">🇪🇸</span><strong>Español</strong><span class="language-check" aria-hidden="true">✓</span></button>
+            </div>
+          </div>
           <button class="menu-button" id="menuButton" type="button" aria-label="Open W.A.T.A. menu" aria-expanded="false" aria-controls="menuPanel"><span></span><span></span><span></span></button>
           <div class="menu-panel" id="menuPanel" hidden>
-            <div class="profile menu-profile" id="profileButton">
+            <div class="profile menu-profile" id="profileButton" data-no-translate>
               <span class="avatar">··</span>
               <span><strong>Loading</strong><small>Checking access</small></span>
             </div>
             <button class="menu-action" type="button" data-hub-only data-hub-scroll="apps"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span><strong>Your apps</strong><small>Open the W.A.T.A. tech stack</small></span></button>
             <button class="menu-action" type="button" data-hub-only data-hub-scroll="instructions"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a3 3 0 0 1 3-2h5v17H7a3 3 0 0 0-3 2V5Z"/><path d="M20 5a3 3 0 0 0-3-2h-5v17h5a3 3 0 0 1 3 2V5Z"/></svg><span><strong>Instructions</strong><small>Jump to PDF and PNG guides</small></span></button>
             <button class="menu-action" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><span><strong>Settings & help</strong><small>How the registry works</small></span></button>
-            <button class="menu-action" id="themeToggle" type="button" aria-label="Switch color theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span><strong><span class="theme-label">Dark</span> mode</strong><small>Change app appearance</small></span></button>
+            <button class="menu-action" id="themeToggle" type="button" data-no-translate aria-label="Switch color theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span><strong><span class="theme-label">Dark</span> <span class="theme-mode">mode</span></strong><small class="theme-help">Change app appearance</small></span></button>
           </div>
         </div>
       </header>
@@ -71,6 +78,6 @@
     <button data-view="followups" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/><path d="M19.5 11.5 17 9"/></svg>Follow-ups</button>
   </nav>
 
-  <script type="module" src="app.js?v=21"></script>
+  <script type="module" src="app.js?v=22"></script>
 </body>
 </html>
