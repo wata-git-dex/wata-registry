@@ -43,12 +43,12 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { position: relative; margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 85% 0, color-mix(in srgb, var(--water) 14%, transparent) 0, transparent 28rem), var(--page); transition: color .2s ease, background-color .2s ease; }
-body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: url("assets/topography.svg"); background-position: center top; background-size: 820px auto; opacity: .16; mask-image: linear-gradient(145deg, black, transparent 74%); }
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: url("assets/brand/topography.svg"); background-position: center top; background-size: 820px auto; opacity: .16; mask-image: linear-gradient(145deg, black, transparent 74%); }
 [data-theme="dark"] body::before { opacity: .095; mix-blend-mode: screen; }
 button, select { font: inherit; }
 button { cursor: pointer; }
 .shell { display: grid; grid-template-columns: 238px minmax(0, 1fr); min-height: 100vh; }
-.rail { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 26px 18px 20px; color: white; background-color: var(--navy); background-image: linear-gradient(180deg, rgba(18,36,73,.92), rgba(7,20,41,.98)), url("assets/topography.svg"); background-size: auto, 680px auto; }
+.rail { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 26px 18px 20px; color: white; background-color: var(--navy); background-image: linear-gradient(180deg, rgba(18,36,73,.92), rgba(7,20,41,.98)), url("assets/brand/topography.svg"); background-size: auto, 680px auto; }
 .brand { display: flex; align-items: center; gap: 12px; padding: 4px 10px 28px; color: white; font-size: 22px; font-weight: 900; letter-spacing: .14em; text-decoration: none; }
 .wata-logo { width: 42px; height: 42px; flex: 0 0 42px; object-fit: contain; filter: drop-shadow(0 5px 12px rgba(0, 190, 247, .18)); }
 .hub-brand-icon { border-radius: 12px; }
@@ -68,7 +68,7 @@ main { min-width: 0; }
 [data-product="hub"] .mobile-nav { display: none !important; }
 [data-product="portal"] [data-hub-only] { display: none !important; }
 [data-product="hub"] .content { max-width: 1280px; }
-.hub-rail { background-image: linear-gradient(180deg, rgba(13,32,64,.94), rgba(5,16,34,.99)), url("assets/topography.svg"); }
+.hub-rail { background-image: linear-gradient(180deg, rgba(13,32,64,.94), rgba(5,16,34,.99)), url("assets/brand/topography.svg"); }
 .hub-brand { padding-bottom: 34px; letter-spacing: 0; }
 .hub-brand img { width: 46px; height: 46px; border-radius: 14px; }
 .hub-brand > span { display: grid; gap: 2px; }
@@ -124,7 +124,7 @@ main { min-width: 0; }
 .menu-action strong { font-size: 13px; }
 .menu-action small { color: var(--muted); font-size: 11px; }
 .content { max-width: 1440px; margin: auto; padding: 34px clamp(18px, 4vw, 52px) 80px; }
-.hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr); gap: 24px; padding: clamp(24px, 4vw, 42px); color: white; background-color: var(--navy); background-image: linear-gradient(125deg, rgba(48,82,164,.96), rgba(18,36,73,.97)), url("assets/topography.svg"); background-size: auto, 720px auto; border-radius: 28px; box-shadow: var(--shadow); }
+.hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr); gap: 24px; padding: clamp(24px, 4vw, 42px); color: white; background-color: var(--navy); background-image: linear-gradient(125deg, rgba(48,82,164,.96), rgba(18,36,73,.97)), url("assets/brand/topography.svg"); background-size: auto, 720px auto; border-radius: 28px; box-shadow: var(--shadow); }
 .hero::after { content: ""; position: absolute; width: 360px; height: 360px; right: -170px; top: -190px; border: 62px solid rgba(118, 222, 231, .12); border-radius: 50%; }
 .eyebrow { margin: 0 0 11px; color: #8de9ff; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .13em; }
 h1 { max-width: 760px; margin: 0; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spacing: -.045em; }

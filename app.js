@@ -217,13 +217,7 @@ function portalView() {
 
 function toolIcon(tool) {
   const images = {
-    watadex: "assets/watadex-icon-clean.svg",
-    partner_portal: "assets/partner-portal-icon-wata-blue-v3-192.png",
-    community: "assets/community-app-original.png",
-    impact_map: "assets/impact-map-icon.svg",
-    website: "assets/wata-website-icon.svg",
-    field_kit: "assets/field-app-original.png",
-    mwater: "assets/mwater-surveyor-icon.png"
+    partner_portal: "assets/registry/icon-192.png"
   };
   if (images[tool.id]) return `<img src="${images[tool.id]}" alt="">`;
   return icons.hub;
