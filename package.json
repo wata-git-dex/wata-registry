@@ -1,0 +1,10 @@
+{
+  "name": "wata-registry",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "./scripts/build.sh",
+    "check": "node --check app.js && node --check gateway.js && node --check sw.js"
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-product="portal">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#3052a4">
+  <meta name="description" content="The secure W.A.T.A. Filter Registry and Partner Portal.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="W.A.T.A. Registry">
+  <script>if(location.protocol==="file:")location.replace(`https://registry.cleanwata.org/${location.hash}`)</script>
+  <script src="theme-init.js"></script>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/registry/icon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/assets/registry/apple-touch-icon.png" sizes="180x180">
+  <link rel="stylesheet" href="styles.css?v=18">
+  <title>W.A.T.A. Filter Registry</title>
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail" aria-label="Primary navigation">
+      <a class="brand" href="#home" aria-label="W.A.T.A. home">
+        <img class="wata-logo hub-brand-icon" src="assets/registry/apple-touch-icon.png" alt="" width="42" height="42">
+        <span>W.A.T.A.</span>
+      </a>
+      <nav id="nav">
+        <button class="active" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8Z"/></svg>Home</button>
+        <button data-view="impact" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C8.6 8 6 11.1 6 15a6 6 0 0 0 12 0c0-3.9-2.6-7-6-12Z"/><path d="M9.5 15.5c.4 1.4 1.3 2.2 2.7 2.5"/></svg>Impact</button>
+        <button data-view="filters" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v3l2 2v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2V3Z"/><path d="M8 10h8M9.5 14h5M10 18h4"/></svg>Filters</button>
+        <button data-view="followups" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/><path d="M19.5 11.5 17 9"/></svg>Follow-ups</button>
+        <button data-view="issues" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5v.1"/></svg>Issues</button>
+      </nav>
+      <div class="rail-foot">
+        <span class="status-dot"></span>
+        <span>Read-only preview</span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="mobile-brand" data-view="home"><img class="wata-logo hub-brand-icon" src="assets/registry/apple-touch-icon.png" alt="" width="32" height="32"> W.A.T.A.</button>
+        <div class="scope-wrap" data-portal-only>
+          <label for="scope">Viewing</label>
+          <select id="scope" aria-label="Partner scope"></select>
+        </div>
+        <div class="top-menu">
+          <button class="menu-button" id="menuButton" type="button" aria-label="Open W.A.T.A. menu" aria-expanded="false" aria-controls="menuPanel"><span></span><span></span><span></span></button>
+          <div class="menu-panel" id="menuPanel" hidden>
+            <div class="profile menu-profile" id="profileButton">
+              <span class="avatar">··</span>
+              <span><strong>Loading</strong><small>Checking access</small></span>
+            </div>
+            <button class="menu-action" type="button" data-hub-only data-hub-scroll="apps"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span><strong>Your apps</strong><small>Open the W.A.T.A. tech stack</small></span></button>
+            <button class="menu-action" type="button" data-hub-only data-hub-scroll="instructions"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a3 3 0 0 1 3-2h5v17H7a3 3 0 0 0-3 2V5Z"/><path d="M20 5a3 3 0 0 0-3-2h-5v17h5a3 3 0 0 1 3 2V5Z"/></svg><span><strong>Instructions</strong><small>Jump to PDF and PNG guides</small></span></button>
+            <button class="menu-action" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><span><strong>Settings & help</strong><small>How the registry works</small></span></button>
+            <button class="menu-action" id="themeToggle" type="button" aria-label="Switch color theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span><strong><span class="theme-label">Dark</span> mode</strong><small>Change app appearance</small></span></button>
+          </div>
+        </div>
+      </header>
+
+      <section id="app" class="content" aria-live="polite"></section>
+      <footer class="site-footer"><img src="assets/brand/wata-logo.png" alt="" width="30" height="30"><span>Water Access to All</span></footer>
+    </main>
+  </div>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <button class="active" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8Z"/></svg>Home</button>
+    <button data-view="impact" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C8.6 8 6 11.1 6 15a6 6 0 0 0 12 0c0-3.9-2.6-7-6-12Z"/><path d="M9.5 15.5c.4 1.4 1.3 2.2 2.7 2.5"/></svg>Impact</button>
+    <button data-view="filters" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v3l2 2v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2V3Z"/><path d="M8 10h8M9.5 14h5M10 18h4"/></svg>Filters</button>
+    <button data-view="issues" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5v.1"/></svg>Issues</button>
+    <button data-view="followups" data-portal-only><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/><path d="M19.5 11.5 17 9"/></svg>Follow-ups</button>
+  </nav>
+
+  <script type="module" src="app.js?v=21"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "wata-registry",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-08-21",
+  "services": [
+    { "binding": "PORTAL", "service": "wata-partner-portals" }
+  ]
+}
