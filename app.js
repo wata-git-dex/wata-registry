@@ -27,7 +27,7 @@ const HUB_SNAPSHOT_KEY = "wata-tech-hub-snapshot-v1";
 const HUB_SNAPSHOT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 let currentLanguage = normalizeLanguage(localStorage.getItem("wata-language") || navigator.language);
 document.documentElement.lang = currentLanguage;
-document.title = isPortalHost ? "W.A.T.A. Partner Portal" : "W.A.T.A. Tech Hub";
+document.title = isPortalHost ? "W.A.T.A. Filter Registry" : "W.A.T.A. Tech Hub";
 const initialRoute = isPortalHost ? location.hash.slice(1) : "";
 let selectedFilterId = initialRoute.startsWith("filter/") ? decodeURIComponent(initialRoute.slice(7)) : null;
 let currentView = selectedFilterId ? "filter-detail" : initialRoute || (isPortalHost ? "portal" : "home");
@@ -116,7 +116,7 @@ function syncLanguageControl() {
 function syncLanguageUi() {
   document.documentElement.lang = currentLanguage;
   document.title = isPortalHost
-    ? (currentLanguage === "es" ? "Registro de Filtros W.A.T.A." : "W.A.T.A. Partner Portal")
+    ? (currentLanguage === "es" ? "Registro de Filtros W.A.T.A." : "W.A.T.A. Filter Registry")
     : (currentLanguage === "es" ? "Centro Tecnológico W.A.T.A." : "W.A.T.A. Tech Hub");
   translateDom(document);
   if (state.session) setProfile();
@@ -202,8 +202,19 @@ function partnerDisplayName() {
 
 function partnerMark() {
   const active = partner();
-  if (active.logo) return `<span class="partner-mark"><img src="${escapeHtml(active.logo)}" alt="${escapeHtml(active.logoAlt || `${active.name} logo`)}"></span>`;
+  const logo = safeImageUrl(active.logo);
+  if (logo) return `<span class="partner-mark"><img src="${escapeHtml(logo)}" alt="${escapeHtml(active.logoAlt || `${active.name} logo`)}"></span>`;
   return `<span class="partner-mark" aria-label="${escapeHtml(active.name)}">${escapeHtml(active.mark)}</span>`;
+}
+
+function safeImageUrl(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(value, location.origin);
+    return url.protocol === "https:" || url.origin === location.origin ? url.href : "";
+  } catch {
+    return "";
+  }
 }
 
 function applyPartnerBrand() {
@@ -278,7 +289,7 @@ function portalView() {
   const generated = state.meta?.generatedAt ? `Updated ${date(state.meta.generatedAt)}` : "Live registry";
   const heroTitle = currentScope === "all" ? "Every filter, from distribution through follow-up." : `${partner().name} filter registry.`;
   return `<div class="hero">
-    <div><p class="eyebrow">W.A.T.A. Filter Registry</p><h1>${escapeHtml(heroTitle)}</h1><p class="hero-copy">Track distributed filters, household reach, upcoming visits, and data-quality issues for the partner view selected above.</p></div>
+    <div><p class="eyebrow">W.A.T.A. Filter Registry</p><h1>${escapeHtml(heroTitle)}</h1><p class="hero-copy">Track distributed filters, household reach, upcoming visits, and data-quality issues inside your authorized partner view.</p></div>
     <div class="sync-card"><span>Registry health</span><strong>${navigator.onLine ? "Connected" : "Offline"}</strong><small>${navigator.onLine ? `${escapeHtml(generated)} · Read-only` : "The app shell works offline; private data is not cached."}</small></div>
   </div>
   ${sectionHeader("Program at a glance", partner().name)}${stats()}
@@ -395,7 +406,7 @@ function filterRows(rows) {
 function filtersView() {
   const rows = countryScoped(state.filters);
   return `${sectionHeader("Water filters", `${number(rows.length)} Asset Registry records in ${partnerDisplayName()}`)}
-    <div class="notice"><b>Trusted partner view</b><span>Approved partner leads can see household names and household size for their records. Health responses remain excluded.</span></div>
+    <div class="notice"><b>Authorized Registry view</b><span>Approved partner leads can see household names and household size for their records. Health responses remain excluded.</span></div>
     <div class="panel"><div class="table-tools"><input class="search" id="filterSearch" type="search" placeholder="Search filter, country, deployment, community, or family">${countryFilters(state.filters)}</div><div class="table-scroll"><table><thead><tr><th>Filter ID</th><th>Country / program</th><th>Community</th><th>Family</th><th>People</th><th>Status</th><th>Distribution date</th><th>Next follow-up</th></tr></thead><tbody id="filterRows">${filterRows(rows)}</tbody></table></div></div>`;
 }
 
@@ -412,7 +423,7 @@ function filterDetailView() {
       <div><p class="eyebrow">Water filter record</p><h1>${display(row.id)}</h1><p>${display(row.family)} · ${display(row.community)}</p></div>
       <span class="pill ${statusClass(row.status)}">${display(row.status)}</span>
     </div>
-    <div class="notice"><b>Trusted partner record</b><span>Operational household and field details are shown; health responses are excluded.</span></div>
+    <div class="notice"><b>Authorized Registry record</b><span>Operational household and field details are shown; health responses are excluded.</span></div>
     <div class="detail-grid">
       <article class="detail-card"><h3>Filter & program</h3><dl class="detail-list">${field("Filter ID", row.id)}${field("Country", `${countryInfo(row).flag} ${countryInfo(row).name}`)}${field("Partner", partnerName)}${field("Deployment", row.deployment)}${field("Status", row.status)}${field("Scope check", row.scopeStatus)}</dl></article>
       <article class="detail-card"><h3>Household</h3><dl class="detail-list">${field("Family", row.family)}${field("Household code", row.householdCode)}${field("People", row.people || "—")}${field("Community", row.community)}</dl></article>
@@ -446,34 +457,38 @@ function settingsView() {
       <article class="help-card"><span>04</span><h3>Coming soon</h3><p>Community App and Field Kit stay visible as roadmap items but will not send you to a guessed or unfinished destination.</p></article>
     </div>
     <button class="retry-button" data-view="home">Back to your apps</button>`;
-  return `<div class="partner-summary">${partnerMark()}<div><h2>Settings & help</h2><p>${escapeHtml(partnerDisplayName())} · Portal guide</p></div></div>
-    ${sectionHeader("How this portal works", "A practical guide to navigating and interpreting the W.A.T.A. registry.")}
+  return `<div class="partner-summary">${partnerMark()}<div><h2>Settings & help</h2><p>${escapeHtml(partnerDisplayName())} · Registry guide</p></div></div>
+    ${sectionHeader("How the Registry works", "A practical guide to navigating and interpreting the W.A.T.A. Filter Registry.")}
     <div class="help-grid">
       <article class="help-card"><span>01</span><h3>Choose a view</h3><p>W.A.T.A. admins and all-scope observers can switch between All W.A.T.A. and individual partners at the top. Partner leads and scoped observers only see the organizations approved for their Airtable email.</p></article>
       <article class="help-card"><span>02</span><h3>Filter by country</h3><p>Use the flag buttons on Filters, Follow-ups, and Issues. “All” combines every country inside your authorized partner view.</p></article>
       <article class="help-card"><span>03</span><h3>Open a filter</h3><p>Select a Filter ID for its household, deployment, field ownership, and follow-up timeline. Health survey responses are never shown here.</p></article>
       <article class="help-card"><span>04</span><h3>Read follow-ups</h3><p>Overdue means the scheduled milestone has passed—not that the filter disappears. A late visit still counts as the next completed follow-up, and Airtable calculates the following milestone.</p></article>
       <article class="help-card"><span>05</span><h3>Resolve issues</h3><p>Issues are action signals from the source data. Use the operational IDs, survey type, deployment, surveyor, and date to find and correct the source record.</p></article>
-      <article class="help-card"><span>06</span><h3>Understand updates</h3><p>mWater is the raw field source. Airtable is the registry and permissions source. This portal is read-only and reflects Airtable after the ingestion workflow runs.</p></article>
+      <article class="help-card"><span>06</span><h3>Understand updates</h3><p>mWater is the raw field source. Airtable is the registry and permissions source. The Registry is read-only and reflects Airtable after the ingestion workflow runs.</p></article>
     </div>
     ${sectionHeader("Access & privacy", "Why the email-code screen appears and what partners can see.")}
     <div class="detail-grid">
-      <article class="detail-card"><h3>Secure sign-in</h3><p class="help-copy">The Cloudflare screen is the portal’s email verification gate. Users enter the email approved in Airtable and receive a one-time code; they do not need a Cloudflare account.</p></article>
+      <article class="detail-card"><h3>Secure sign-in</h3><p class="help-copy">The W.A.T.A. verification screen uses Cloudflare Access to protect the Registry. Enter the email approved in Airtable and use the one-time code; no Cloudflare account is required.</p></article>
       <article class="detail-card"><h3>Airtable controls access</h3><p class="help-copy">Email, Active status, Lead/Admin/Observer role, Team, and Portal Access determine the view. Changing those fields changes access without changing portal code.</p></article>
-      <article class="detail-card"><h3>Read-only by design</h3><p class="help-copy">The portal does not edit mWater or Airtable. Country maps are aggregated and do not expose household coordinates.</p></article>
+      <article class="detail-card"><h3>Read-only by design</h3><p class="help-copy">The Registry does not edit mWater or Airtable. Country maps are aggregated and do not expose household coordinates.</p></article>
     </div>`;
 }
 
 function loadingView() {
-  return `<div class="hero"><div><p class="eyebrow">Secure W.A.T.A. app</p><h1>Building your workspace.</h1><p class="hero-copy">Checking your Airtable role and preparing the apps and instructions available to you.</p></div></div>`;
+  return `<div class="hero"><div><p class="eyebrow">Secure W.A.T.A. Filter Registry</p><h1>Preparing your Registry view.</h1><p class="hero-copy">Confirming your identity and authorized partner scope before loading Registry data.</p></div></div>`;
 }
 
 function errorView() {
   const forbidden = state.error?.status === 401 || state.error?.status === 403;
   const accessHelp = isPortalHost
-    ? "Confirm that your Airtable Surveyors record has a unique email, Active status, an approved role and team, and Portal Access checked."
+    ? "Use the email approved for Registry access. If this email should be enabled, contact your W.A.T.A. administrator."
     : "Confirm that your Airtable App Access record has a unique email, Active status, Tech Hub checked, and at least one app enabled.";
-  return `<div class="hero"><div><p class="eyebrow">${forbidden ? "App access" : "Connection"}</p><h1>${forbidden ? "Your W.A.T.A. access is not enabled yet." : "The W.A.T.A. app is temporarily unavailable."}</h1><p class="hero-copy">${forbidden ? accessHelp : "No records were changed. Try again after the connection is restored."}</p><button class="retry-button" id="retryButton">Try again</button></div></div>`;
+  const eyebrow = isPortalHost && forbidden ? "Registry access" : forbidden ? "App access" : "Connection";
+  const title = forbidden
+    ? (isPortalHost ? "This email is not enabled for Registry access." : "Your W.A.T.A. access is not enabled yet.")
+    : (isPortalHost ? "The Filter Registry is temporarily unavailable." : "The W.A.T.A. app is temporarily unavailable.");
+  return `<div class="hero"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="hero-copy">${forbidden ? accessHelp : "No records were changed. Try again after the connection is restored."}</p><button class="retry-button" id="retryButton">Try again</button></div></div>`;
 }
 
 const portalViews = new Set(["portal", "impact", "filters", "filter-detail", "followups", "issues"]);
@@ -558,7 +573,7 @@ async function loadPortal({ background = false } = {}) {
   const timeout = setTimeout(() => controller.abort(), 20000);
   try {
     const response = await fetch("/api/bootstrap", {
-      headers: { accept: "application/json" },
+      headers: { accept: "application/json", "x-requested-with": "XMLHttpRequest" },
       cache: "no-store",
       signal: controller.signal
     });

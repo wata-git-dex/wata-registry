@@ -1,10 +1,14 @@
 /*
   Cache-Control: no-cache
-  Content-Security-Policy: default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://map.cleanwata.org; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-src https://map.cleanwata.org; worker-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-site
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Referrer-Policy: no-referrer
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
+  X-Robots-Tag: noindex, nofollow, noarchive
 
 /assets/*
   Cache-Control: public, max-age=86400
