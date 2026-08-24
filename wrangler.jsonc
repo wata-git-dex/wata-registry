@@ -6,9 +6,5 @@
   "compatibility_flags": ["nodejs_compat"],
   "services": [
     { "binding": "PORTAL", "service": "wata-partner-portals" }
-  ],
-  "observability": {
-    "enabled": true,
-    "logs": { "head_sampling_rate": 1 }
-  }
+  ]
 }
