@@ -33,6 +33,7 @@ let selectedFilterId = initialRoute.startsWith("filter/") ? decodeURIComponent(i
 let currentView = selectedFilterId ? "filter-detail" : initialRoute || (isPortalHost ? "portal" : "home");
 let currentScope = "all";
 let currentCountry = "all";
+let registryMap = null;
 
 if (isPortalHost) {
   document.querySelector(".brand")?.setAttribute("href", "#portal");
@@ -40,9 +41,9 @@ if (isPortalHost) {
 }
 
 const countryProfiles = {
-  CO: { name: "Colombia", flag: "🇨🇴", x: 29, y: 45 },
-  GT: { name: "Guatemala", flag: "🇬🇹", x: 22, y: 34 },
-  MM: { name: "Myanmar", flag: "🇲🇲", x: 76, y: 31 }
+  CO: { name: "Colombia", flag: "🇨🇴", x: 29, y: 45, center: [4.5, -74], zoom: 5 },
+  GT: { name: "Guatemala", flag: "🇬🇹", x: 22, y: 34, center: [15.5, -90.2], zoom: 7 },
+  MM: { name: "Myanmar", flag: "🇲🇲", x: 76, y: 31, center: [21, 96], zoom: 5 }
 };
 
 const icons = {
@@ -54,6 +55,7 @@ const icons = {
   book: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a3 3 0 0 1 3-2h5v17H7a3 3 0 0 0-3 2V5Z"/><path d="M20 5a3 3 0 0 0-3-2h-5v17h5a3 3 0 0 1 3 2V5Z"/></svg>`,
   people: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 10 0v2M16 4a3 3 0 0 1 0 6M15 14a5 5 0 0 1 6 4v2"/></svg>`,
   globe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>`,
+  map: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/><circle cx="15" cy="11" r="2"/></svg>`,
   phone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>`
 };
 
@@ -295,6 +297,7 @@ function portalView() {
   ${sectionHeader("Program at a glance", partner().name)}${stats()}
   ${sectionHeader("Open a registry view", "Everything here stays inside your approved partner and country scope.")}
   <div class="app-grid">
+    <button class="app-card" data-view="map"><span class="app-icon">${icons.map}</span><h3>Filter Map</h3><p>See privacy-rounded filter locations and follow-up priorities inside your authorized view.</p><b>Open map →</b></button>
     <button class="app-card" data-view="filters"><span class="app-icon app-icon-image"><img src="assets/registry/icon-192.png" alt=""></span><h3>Water Filters</h3><p>Find each filter, family, community, status, and distribution date.</p><b>View filters →</b></button>
     <button class="app-card" data-view="followups"><span class="app-icon">${icons.followup}</span><h3>Follow-ups</h3><p>See completed visits, upcoming milestones, and overdue records.</p><b>View schedule →</b></button>
     <button class="app-card" data-view="impact"><span class="app-icon">${icons.impact}</span><h3>Impact</h3><p>Understand filters tracked, survey activity, and people reached.</p><b>View impact →</b></button>
@@ -368,6 +371,97 @@ function globalImpactMap() {
     <iframe src="https://map.cleanwata.org/" title="Interactive W.A.T.A. global impact map" loading="lazy" referrerpolicy="no-referrer"></iframe>
     <a href="https://map.cleanwata.org/" target="_blank" rel="noopener noreferrer">Open the full impact map ↗</a>
   </div>`;
+}
+
+function mapMarkerState(row) {
+  const status = String(row.status || "").toLowerCase();
+  const followupStatus = String(row.followupStatus || "").toLowerCase();
+  const today = new Date();
+  const dueSoon = new Date(today);
+  dueSoon.setDate(dueSoon.getDate() + 30);
+  const dateKey = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  const dueKey = String(row.followup || "").slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey < dateKey(today)) return { key: "overdue", label: "Follow-up overdue", color: "#e45757", priority: 5 };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey <= dateKey(dueSoon)) return { key: "due-soon", label: "Follow-up due soon", color: "#f0a43a", priority: 4 };
+  if (status.includes("drop")) return { key: "dropoff", label: "Drop-off", color: "#8f6bd8", priority: 3 };
+  if (row.lastFollowup || followupStatus.includes("complete") || followupStatus.includes("current")) return { key: "current", label: "Follow-up current", color: "#2fb785", priority: 2 };
+  return { key: "distributed", label: "Distributed", color: "#19b9df", priority: 1 };
+}
+
+function mappableRows() {
+  return countryScoped(state.filters).filter(row => Number.isFinite(row.latitude) && Number.isFinite(row.longitude));
+}
+
+function mapView() {
+  const visibleRows = countryScoped(state.filters);
+  const mapped = mappableRows();
+  const missing = visibleRows.length - mapped.length;
+  const counts = mapped.reduce((result, row) => {
+    result[mapMarkerState(row).key] += 1;
+    return result;
+  }, { distributed: 0, current: 0, "due-soon": 0, overdue: 0, dropoff: 0 });
+  return `${sectionHeader("Filter map", `${number(mapped.length)} mapped filters in ${partnerDisplayName()}`)}
+    <div class="notice"><b>Privacy-safe operational map</b><span>Locations are rounded to roughly a neighborhood scale. Records without validated installation coordinates are counted below but never guessed.</span></div>
+    <div class="panel map-panel">
+      <div class="map-toolbar">${countryFilters(state.filters)}<div class="map-coverage"><strong>${number(mapped.length)}</strong><span>mapped</span><strong>${number(missing)}</strong><span>missing coordinates</span></div></div>
+      <div class="map-legend" aria-label="Map legend">
+        <span><i style="--marker:#19b9df"></i>Distributed <b>${number(counts.distributed)}</b></span>
+        <span><i style="--marker:#2fb785"></i>Follow-up current <b>${number(counts.current)}</b></span>
+        <span><i style="--marker:#f0a43a"></i>Due soon <b>${number(counts["due-soon"])}</b></span>
+        <span><i style="--marker:#e45757"></i>Overdue <b>${number(counts.overdue)}</b></span>
+        <span><i style="--marker:#8f6bd8"></i>Drop-off <b>${number(counts.dropoff)}</b></span>
+      </div>
+      <div id="registryMap" class="registry-map" role="region" aria-label="Interactive map of authorized water filters"><div class="map-loading">Loading secure map…</div></div>
+      <p class="map-footnote">Map tiles require an internet connection. Filter records and permissions remain read-only and come from Airtable.</p>
+    </div>`;
+}
+
+function mapFallback(message) {
+  const container = document.querySelector("#registryMap");
+  if (container) container.innerHTML = `<div class="map-empty"><strong>${escapeHtml(translateText("Map unavailable", currentLanguage))}</strong><span>${escapeHtml(translateText(message, currentLanguage))}</span></div>`;
+}
+
+function mountRegistryMap() {
+  const container = document.querySelector("#registryMap");
+  if (!container) return;
+  if (!navigator.onLine) { mapFallback("Reconnect to load the basemap. Your authorized counts remain visible above."); return; }
+  if (!window.L) { mapFallback("The map library could not load. Refresh when connected."); return; }
+  const rows = mappableRows();
+  container.replaceChildren();
+  registryMap = window.L.map(container, { zoomControl: true, scrollWheelZoom: false });
+  window.L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+  }).addTo(registryMap);
+
+  const groups = new Map();
+  for (const row of rows) {
+    const key = `${row.latitude},${row.longitude}`;
+    const group = groups.get(key) || { latitude: row.latitude, longitude: row.longitude, rows: [] };
+    group.rows.push(row);
+    groups.set(key, group);
+  }
+  const bounds = [];
+  for (const group of groups.values()) {
+    const markerState = group.rows.map(mapMarkerState).sort((a, b) => b.priority - a.priority)[0];
+    const radius = Math.min(18, 7 + Math.log2(group.rows.length) * 2.2);
+    const communities = [...new Set(group.rows.map(row => row.community).filter(Boolean))];
+    const deployments = [...new Set(group.rows.map(row => row.deployment).filter(Boolean))];
+    const links = group.rows.slice(0, 6).map(row => `<button type="button" class="map-record-link" data-filter-id="${escapeHtml(row.recordId)}">${escapeHtml(row.id)}</button>`).join("");
+    const more = group.rows.length > 6 ? `<span class="map-more">+${group.rows.length - 6} more</span>` : "";
+    window.L.circleMarker([group.latitude, group.longitude], {
+      radius, color: "#ffffff", weight: 2, fillColor: markerState.color, fillOpacity: 0.9
+    }).addTo(registryMap).bindPopup(`<div class="map-popup"><strong>${group.rows.length === 1 ? escapeHtml(group.rows[0].id) : escapeHtml(translateText(`${group.rows.length} filters at this location`, currentLanguage))}</strong><span>${escapeHtml(translateText(markerState.label, currentLanguage))}</span><span>${escapeHtml(translateText(communities.slice(0, 2).join(" · ") || "Community not assigned", currentLanguage))}</span><small>${escapeHtml(translateText(deployments.slice(0, 2).join(" · ") || "Deployment not assigned", currentLanguage))}</small><div>${links}${more}</div></div>`);
+    bounds.push([group.latitude, group.longitude]);
+  }
+  if (bounds.length) {
+    registryMap.fitBounds(bounds, { padding: [34, 34], maxZoom: 13 });
+  } else {
+    const selected = currentCountry !== "all" ? countryProfiles[currentCountry] : null;
+    registryMap.setView(selected?.center || [12, -79], selected?.zoom || 3);
+    container.insertAdjacentHTML("beforeend", `<div class="map-zero">${escapeHtml(translateText("No validated installation coordinates match this partner and country selection.", currentLanguage))}</div>`);
+  }
+  setTimeout(() => registryMap?.invalidateSize(), 0);
 }
 
 function impactView() {
@@ -461,7 +555,7 @@ function settingsView() {
     ${sectionHeader("How the Registry works", "A practical guide to navigating and interpreting the W.A.T.A. Filter Registry.")}
     <div class="help-grid">
       <article class="help-card"><span>01</span><h3>Choose a view</h3><p>W.A.T.A. admins and all-scope observers can switch between All W.A.T.A. and individual partners at the top. Partner leads and scoped observers only see the organizations approved for their Airtable email.</p></article>
-      <article class="help-card"><span>02</span><h3>Filter by country</h3><p>Use the flag buttons on Filters, Follow-ups, and Issues. “All” combines every country inside your authorized partner view.</p></article>
+      <article class="help-card"><span>02</span><h3>Filter by country</h3><p>Use the flag buttons on Map, Filters, Follow-ups, and Issues. “All” combines every country inside your authorized partner view.</p></article>
       <article class="help-card"><span>03</span><h3>Open a filter</h3><p>Select a Filter ID for its household, deployment, field ownership, and follow-up timeline. Health survey responses are never shown here.</p></article>
       <article class="help-card"><span>04</span><h3>Read follow-ups</h3><p>Overdue means the scheduled milestone has passed—not that the filter disappears. A late visit still counts as the next completed follow-up, and Airtable calculates the following milestone.</p></article>
       <article class="help-card"><span>05</span><h3>Resolve issues</h3><p>Issues are action signals from the source data. Use the operational IDs, survey type, deployment, surveyor, and date to find and correct the source record.</p></article>
@@ -471,7 +565,7 @@ function settingsView() {
     <div class="detail-grid">
       <article class="detail-card"><h3>Secure sign-in</h3><p class="help-copy">The W.A.T.A. verification screen uses Cloudflare Access to protect the Registry. Enter the email approved in Airtable and use the one-time code; no Cloudflare account is required.</p></article>
       <article class="detail-card"><h3>Airtable controls access</h3><p class="help-copy">Email, Active status, Lead/Admin/Observer role, Team, and Portal Access determine the view. Changing those fields changes access without changing portal code.</p></article>
-      <article class="detail-card"><h3>Read-only by design</h3><p class="help-copy">The Registry does not edit mWater or Airtable. Country maps are aggregated and do not expose household coordinates.</p></article>
+      <article class="detail-card"><h3>Read-only by design</h3><p class="help-copy">The Registry does not edit mWater or Airtable. The Filter Map only uses validated installation coordinates rounded to roughly a neighborhood scale; records without safe coordinates are not placed on the map.</p></article>
     </div>`;
 }
 
@@ -491,7 +585,7 @@ function errorView() {
   return `<div class="hero"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="hero-copy">${forbidden ? accessHelp : "No records were changed. Try again after the connection is restored."}</p><button class="retry-button" id="retryButton">Try again</button></div></div>`;
 }
 
-const portalViews = new Set(["portal", "impact", "filters", "filter-detail", "followups", "issues"]);
+const portalViews = new Set(["portal", "map", "impact", "filters", "filter-detail", "followups", "issues"]);
 
 function syncChrome() {
   const hasPortal = isPortalHost && Boolean(state.session?.portalEnabled);
@@ -501,9 +595,10 @@ function syncChrome() {
 }
 
 function render() {
+  if (registryMap) { registryMap.remove(); registryMap = null; }
   if (state.loading) { app.innerHTML = loadingView(); syncLanguageUi(); return; }
   if (state.error) { app.innerHTML = errorView(); document.querySelector("#retryButton")?.addEventListener("click", loadPortal); syncLanguageUi(); return; }
-  const views = { home: homeView, portal: portalView, impact: impactView, filters: filtersView, "filter-detail": filterDetailView, followups: followupsView, issues: issuesView, settings: settingsView };
+  const views = { home: homeView, portal: portalView, map: mapView, impact: impactView, filters: filtersView, "filter-detail": filterDetailView, followups: followupsView, issues: issuesView, settings: settingsView };
   if (!isPortalHost && currentView !== "settings") currentView = "home";
   if (isPortalHost && currentView === "home") currentView = "portal";
   if (!state.session?.portalEnabled && portalViews.has(currentView)) currentView = "home";
@@ -521,6 +616,7 @@ function render() {
     translateDom(document.querySelector("#filterRows"));
   });
   syncLanguageUi();
+  if (currentView === "map") requestAnimationFrame(mountRegistryMap);
 }
 
 function applyBootstrap(body) {

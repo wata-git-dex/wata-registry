@@ -3,7 +3,7 @@ const APP_SECURITY_HEADERS = {
   "cross-origin-opener-policy": "same-origin",
   "cross-origin-resource-policy": "same-site",
   "permissions-policy": "camera=(), microphone=(), geolocation=()",
-  "referrer-policy": "no-referrer",
+  "referrer-policy": "strict-origin-when-cross-origin",
   "strict-transport-security": "max-age=31536000; includeSubDomains",
   "x-content-type-options": "nosniff",
   "x-frame-options": "DENY",

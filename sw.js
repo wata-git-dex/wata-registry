@@ -1,10 +1,11 @@
-const VERSION = "wata-registry-v3";
+const VERSION = "wata-registry-v4";
 const APP_SHELL = [
-  "/", "/index.html", "/styles.css?v=20", "/app.js?v=23", "/i18n.js", "/theme-init.js",
+  "/", "/index.html", "/styles.css?v=21", "/app.js?v=24", "/i18n.js", "/theme-init.js",
   "/partner-branding.js", "/manifest.webmanifest", "/assets/registry/icon-32.png",
   "/assets/registry/apple-touch-icon.png", "/assets/registry/icon-192.png",
   "/assets/registry/icon-512.png", "/assets/registry/icon-512-maskable.png",
-  "/assets/brand/wata-logo.png", "/assets/brand/topography.svg"
+  "/assets/brand/wata-logo.png", "/assets/brand/topography.svg",
+  "/assets/vendor/leaflet/leaflet.css", "/assets/vendor/leaflet/leaflet.js"
 ];
 
 self.addEventListener("install", event => {
