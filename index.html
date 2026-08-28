@@ -13,7 +13,7 @@
   <link rel="icon" href="/assets/registry/icon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/assets/registry/apple-touch-icon.png" sizes="180x180">
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=23">
   <title>W.A.T.A. Filter Registry</title>
 </head>
 <body>
@@ -53,15 +53,6 @@
             </div>
           </div>
           <button class="menu-button" id="menuButton" type="button" aria-label="Open W.A.T.A. menu" aria-expanded="false" aria-controls="menuPanel"><span></span><span></span><span></span></button>
-          <div class="menu-panel" id="menuPanel" hidden>
-            <div class="profile menu-profile" id="profileButton" data-no-translate>
-              <span class="avatar">··</span>
-              <span><strong>Loading</strong><small>Checking access</small></span>
-            </div>
-            <button class="menu-action" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><span><strong>Settings & help</strong><small>How the registry works</small></span></button>
-            <button class="menu-action" id="themeToggle" type="button" data-no-translate aria-label="Switch color theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span><strong><span class="theme-label">Dark</span> <span class="theme-mode">mode</span></strong><small class="theme-help">Change app appearance</small></span></button>
-            <a class="menu-action sign-out-action" href="/cdn-cgi/access/logout"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/><path d="m15 8 4 4-4 4M19 12H8"/></svg><span><strong>Sign out</strong><small>End your secure Registry session</small></span></a>
-          </div>
         </div>
       </header>
 
@@ -69,6 +60,29 @@
       <footer class="site-footer"><img src="assets/brand/wata-logo.png" alt="" width="30" height="30"><span>W.A.T.A. Filter Registry · Water Access to All</span></footer>
     </main>
   </div>
+  <div class="drawer-scrim" id="drawerScrim" hidden></div>
+  <aside class="menu-panel menu-drawer" id="menuPanel" aria-label="W.A.T.A. menu" aria-hidden="true" hidden>
+    <div class="drawer-head"><div class="profile menu-profile" id="profileButton" data-no-translate><span class="avatar">··</span><span><strong>Loading</strong><small>Checking access</small></span></div><button class="close-button" id="closeMenu" type="button" aria-label="Close menu">×</button></div>
+    <nav class="drawer-nav">
+      <p class="menu-section-label">Registry</p>
+      <div class="menu-group">
+        <button class="menu-action" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8Z"/></svg><span><strong>Home</strong><small>Registry overview</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="map"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/></svg><span><strong>Map</strong><small>Explore mapped filters</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="filters"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v3l2 2v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2V3Z"/></svg><span><strong>Filters</strong><small>Find registry records</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="followups"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/></svg><span><strong>Follow-ups</strong><small>Visits and milestones</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="issues"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/></svg><span><strong>Issues</strong><small>Records needing review</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+      </div>
+      <p class="menu-section-label">Settings</p>
+      <div class="menu-group">
+        <button class="menu-action" id="themeToggle" type="button" data-no-translate aria-label="Switch color theme" aria-pressed="false"><span class="theme-icon" aria-hidden="true">☾</span><span><strong>Appearance</strong><small><span class="theme-label">Dark</span> <span class="theme-mode">mode</span></small></span></button>
+        <button class="menu-action" id="drawerLanguageButton" type="button" aria-expanded="false" aria-controls="drawerLanguagePanel"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg><span><strong>Language</strong><small id="drawerLanguageValue" data-no-translate>English</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <div class="drawer-language-panel drawer-submenu" id="drawerLanguagePanel" data-no-translate hidden><button type="button" data-language="en"><span aria-hidden="true">🇺🇸</span><strong>English</strong><span class="language-check" aria-hidden="true">✓</span></button><button type="button" data-language="es"><span aria-hidden="true">🇪🇸</span><strong>Español</strong><span class="language-check" aria-hidden="true">✓</span></button></div>
+        <button class="menu-action" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><span><strong>Settings &amp; help</strong><small>How the registry works</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+      </div>
+      <a class="menu-action sign-out-action drawer-signout" href="/cdn-cgi/access/logout"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/><path d="m15 8 4 4-4 4M19 12H8"/></svg><span><strong>Sign out</strong><small>End your secure Registry session</small></span></a>
+      <div class="menu-version"><span>W.A.T.A. Registry</span><strong>v1.3</strong></div>
+    </nav>
+  </aside>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
     <button class="active" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8Z"/></svg>Home</button>
@@ -79,6 +93,6 @@
   </nav>
 
   <script src="assets/vendor/leaflet/leaflet.js" defer></script>
-  <script type="module" src="app.js?v=24"></script>
+  <script type="module" src="app.js?v=26"></script>
 </body>
 </html>

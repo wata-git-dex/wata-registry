@@ -1,6 +1,6 @@
-const VERSION = "wata-registry-v4";
+const VERSION = "wata-registry-v6";
 const APP_SHELL = [
-  "/", "/index.html", "/styles.css?v=21", "/app.js?v=24", "/i18n.js", "/theme-init.js",
+  "/", "/index.html", "/styles.css?v=23", "/app.js?v=26", "/i18n.js", "/theme-init.js",
   "/partner-branding.js", "/manifest.webmanifest", "/assets/registry/icon-32.png",
   "/assets/registry/apple-touch-icon.png", "/assets/registry/icon-192.png",
   "/assets/registry/icon-512.png", "/assets/registry/icon-512-maskable.png",

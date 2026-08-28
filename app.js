@@ -20,6 +20,8 @@ const themeToggle = document.querySelector("#themeToggle");
 const profileButton = document.querySelector("#profileButton");
 const menuButton = document.querySelector("#menuButton");
 const menuPanel = document.querySelector("#menuPanel");
+const drawerScrim = document.querySelector("#drawerScrim");
+const closeMenuButton = document.querySelector("#closeMenu");
 const languageMenuButton = document.querySelector("#languageMenuButton");
 const languageMenu = document.querySelector("#languageMenu");
 const isPortalHost = document.documentElement.dataset.product === "portal";
@@ -34,6 +36,9 @@ let currentView = selectedFilterId ? "filter-detail" : initialRoute || (isPortal
 let currentScope = "all";
 let currentCountry = "all";
 let registryMap = null;
+let followupMode = "schedule";
+let lifecycleSearch = "";
+let lifecycleSort = "urgent";
 
 if (isPortalHost) {
   document.querySelector(".brand")?.setAttribute("href", "#portal");
@@ -77,6 +82,25 @@ function number(value) {
   return formatNumber(value, currentLanguage);
 }
 
+function dateKey(value) {
+  const match = String(value || "").match(/^\d{4}-\d{2}-\d{2}/u);
+  return match ? match[0] : "";
+}
+
+function dateValue(value) {
+  const key = dateKey(value);
+  return key ? Date.parse(`${key}T00:00:00Z`) : NaN;
+}
+
+function daysBetween(start, end) {
+  const difference = dateValue(end) - dateValue(start);
+  return Number.isFinite(difference) ? Math.round(difference / 86400000) : 0;
+}
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const textSources = new WeakMap();
 const attributeSources = new WeakMap();
 const translatableAttributes = ["aria-label", "title", "placeholder"];
@@ -113,6 +137,36 @@ function syncLanguageControl() {
     option.classList.toggle("active", active);
     option.setAttribute("aria-pressed", String(active));
   });
+  document.querySelectorAll("#drawerLanguagePanel [data-language]").forEach(option => {
+    const active = option.dataset.language === currentLanguage;
+    option.classList.toggle("active", active);
+    option.setAttribute("aria-pressed", String(active));
+  });
+  const drawerLanguageValue = document.querySelector("#drawerLanguageValue");
+  if (drawerLanguageValue) drawerLanguageValue.textContent = currentLanguage === "es" ? "Español" : "English";
+}
+
+function setMenuOpen(open) {
+  if (!menuPanel || !menuButton) return;
+  menuPanel.hidden = !open;
+  menuPanel.setAttribute("aria-hidden", String(!open));
+  menuButton.setAttribute("aria-expanded", String(open));
+  if (drawerScrim) drawerScrim.hidden = !open;
+  document.body.classList.toggle("drawer-open", open);
+  if (open) {
+    languageMenu.hidden = true;
+    languageMenuButton.setAttribute("aria-expanded", "false");
+    closeMenuButton?.focus({ preventScroll: true });
+  }
+}
+
+function toggleDrawerPanel(buttonId, panelId) {
+  const button = document.querySelector(`#${buttonId}`);
+  const panel = document.querySelector(`#${panelId}`);
+  if (!button || !panel) return;
+  const open = panel.hidden;
+  panel.hidden = !open;
+  button.setAttribute("aria-expanded", String(open));
 }
 
 function syncLanguageUi() {
@@ -239,7 +293,10 @@ function applyTheme(theme, persist = true) {
     ? `Modo ${translateText(dark ? "Light" : "Dark", currentLanguage).toLowerCase()}`
     : (dark ? "Light" : "Dark");
   themeToggle.querySelector(".theme-mode").textContent = currentLanguage === "es" ? "" : "mode";
-  themeToggle.querySelector(".theme-help").textContent = translateText("Change app appearance", currentLanguage);
+  const appearanceLabel = themeToggle.querySelector("strong");
+  if (appearanceLabel) appearanceLabel.textContent = translateText("Appearance", currentLanguage);
+  const themeHelp = themeToggle.querySelector(".theme-help");
+  if (themeHelp) themeHelp.textContent = translateText("Change app appearance", currentLanguage);
   document.querySelector('meta[name="theme-color"]').content = dark ? "#061226" : "#3052a4";
 }
 
@@ -508,6 +565,95 @@ function field(label, value, isDate = false) {
   return `<div><dt>${escapeHtml(label)}</dt><dd>${isDate ? date(value) : display(value)}</dd></div>`;
 }
 
+function lifecycleEvents(row) {
+  const events = (Array.isArray(row.events) ? row.events : [])
+    .filter(event => dateKey(event.date) && ["Distribution", "Follow-Up", "Drop-Off"].includes(event.type))
+    .map(event => ({ ...event, date: dateKey(event.date) }));
+  const hasDistribution = events.some(event => event.type === "Distribution");
+  if (!hasDistribution && dateKey(row.distributed)) events.push({ recordId: `derived-install-${row.recordId}`, date: dateKey(row.distributed), type: "Distribution", derived: true });
+  const hasLatestFollowup = events.some(event => event.type === "Follow-Up" && event.date === dateKey(row.lastFollowup));
+  if (!hasLatestFollowup && dateKey(row.lastFollowup)) events.push({ recordId: `derived-followup-${row.recordId}`, date: dateKey(row.lastFollowup), type: "Follow-Up", derived: true });
+  return events.sort((a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type) || a.recordId.localeCompare(b.recordId));
+}
+
+function lifecycleEventLabel(event, followupNumber = 0) {
+  if (event.type === "Distribution") return translateText("Installed", currentLanguage);
+  if (event.type === "Drop-Off") return translateText("Drop-off", currentLanguage);
+  return `${translateText("Follow-up", currentLanguage)} ${followupNumber}`;
+}
+
+function lifecycleDomain(rows) {
+  const dates = rows.flatMap(row => [...lifecycleEvents(row).map(event => event.date), dateKey(row.followup)].filter(Boolean));
+  dates.push(todayKey());
+  let start = Math.min(...dates.map(dateValue).filter(Number.isFinite));
+  let end = Math.max(...dates.map(dateValue).filter(Number.isFinite));
+  if (!Number.isFinite(start) || !Number.isFinite(end)) {
+    end = dateValue(todayKey());
+    start = end - 365 * 86400000;
+  }
+  if (end - start < 60 * 86400000) start = end - 60 * 86400000;
+  return { start, end, span: Math.max(1, end - start) };
+}
+
+function timelinePosition(value, domain) {
+  const timestamp = dateValue(value);
+  const raw = Number.isFinite(timestamp) ? ((timestamp - domain.start) / domain.span) * 100 : 0;
+  return Math.max(1.5, Math.min(98.5, raw));
+}
+
+function lifecycleStatus(row) {
+  const events = lifecycleEvents(row);
+  const followups = events.filter(event => event.type === "Follow-Up");
+  const last = followups.at(-1) || events.at(-1);
+  const due = dateKey(row.followup);
+  const overdueDays = due && due < todayKey() ? daysBetween(due, todayKey()) : 0;
+  return { events, followups, last, due, overdueDays };
+}
+
+function lifecycleRow(row, domain, compact = false) {
+  const { events, followups, last, due, overdueDays } = lifecycleStatus(row);
+  let followupNumber = 0;
+  const markers = events.map(event => {
+    if (event.type === "Follow-Up") followupNumber += 1;
+    const label = lifecycleEventLabel(event, followupNumber);
+    const position = timelinePosition(event.date, domain);
+    return `<button type="button" class="lifecycle-marker ${event.type.toLowerCase().replace(/[^a-z]+/g, "-")}" style="--position:${position}%" data-filter-id="${escapeHtml(row.recordId)}" aria-label="${escapeHtml(`${label}: ${date(event.date)}`)}" title="${escapeHtml(`${label} · ${date(event.date)}`)}"><span></span></button>`;
+  }).join("");
+  const segments = events.slice(1).map((event, index) => {
+    const previous = events[index];
+    const start = timelinePosition(previous.date, domain);
+    const end = timelinePosition(event.date, domain);
+    const duration = daysBetween(previous.date, event.date);
+    return `<span class="lifecycle-segment completed" style="--start:${start}%;--width:${Math.max(0, end - start)}%"><b>${number(duration)}d</b></span>`;
+  }).join("");
+  const dueAfterLast = due && (!last || dateValue(due) > dateValue(last.date));
+  const dueStart = last ? timelinePosition(last.date, domain) : timelinePosition(due, domain);
+  const dueEnd = timelinePosition(due, domain);
+  const dueMarker = dueAfterLast ? `<span class="lifecycle-segment scheduled ${overdueDays ? "overdue" : ""}" style="--start:${dueStart}%;--width:${Math.max(0, dueEnd - dueStart)}%"></span><button type="button" class="lifecycle-marker due ${overdueDays ? "overdue" : ""}" style="--position:${dueEnd}%" data-filter-id="${escapeHtml(row.recordId)}" aria-label="${escapeHtml(`${translateText(overdueDays ? "Overdue milestone" : "Next milestone", currentLanguage)}: ${date(due)}`)}" title="${escapeHtml(`${translateText(overdueDays ? "Overdue milestone" : "Next milestone", currentLanguage)} · ${date(due)}`)}"><span></span></button>` : "";
+  const elapsed = last ? Math.max(0, daysBetween(last.date, todayKey())) : 0;
+  const activityLabel = followups.length
+    ? `${number(elapsed)} ${translateText("days since follow-up", currentLanguage)}`
+    : last ? `${number(elapsed)} ${translateText("days since installation", currentLanguage)}` : translateText("No dated activity", currentLanguage);
+  const secondary = overdueDays
+    ? `${number(overdueDays)} ${translateText("days overdue", currentLanguage)}`
+    : followups.length ? `${number(followups.length)} ${translateText(followups.length === 1 ? "follow-up completed" : "follow-ups completed", currentLanguage)}` : translateText("Never followed up", currentLanguage);
+  return `<article class="lifecycle-row ${compact ? "compact" : ""}" data-lifecycle-filter="${escapeHtml(row.recordId)}">
+    <button class="lifecycle-identity" data-filter-id="${escapeHtml(row.recordId)}"><strong>${display(row.id)}</strong><span>${countryInfo(row).flag} ${display(row.community)}</span><small>${display(row.deployment)}</small></button>
+    <div class="lifecycle-track" aria-label="${escapeHtml(`${row.id} lifecycle`)}"><span class="lifecycle-baseline"></span>${segments}${dueMarker}${markers}</div>
+    <div class="lifecycle-recency ${overdueDays ? "overdue" : ""}"><strong>${activityLabel}</strong><span>${secondary}</span></div>
+  </article>`;
+}
+
+function lifecycleMini(row) {
+  const events = lifecycleEvents(row);
+  const domain = lifecycleDomain([row]);
+  const followupEvents = events.filter(event => event.type === "Follow-Up");
+  return `<div class="lifecycle-mini">${lifecycleRow(row, domain, true)}<ol class="timeline lifecycle-list">${events.length ? events.map(event => {
+    const index = event.type === "Follow-Up" ? followupEvents.indexOf(event) + 1 : 0;
+    return `<li><strong>${escapeHtml(lifecycleEventLabel(event, index))}</strong><span>${date(event.date)}</span></li>`;
+  }).join("") : `<li><strong>${escapeHtml(translateText("No dated activity", currentLanguage))}</strong></li>`}<li class="scheduled"><strong>${escapeHtml(translateText("Next follow-up due", currentLanguage))}</strong><span>${date(row.followup)} · ${display(row.ambassador)}</span></li></ol></div>`;
+}
+
 function filterDetailView() {
   const row = scoped(state.filters).find(item => item.recordId === selectedFilterId);
   if (!row) return `<button class="back-button" data-view="filters" aria-label="Back to filters"><svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg></button><div class="empty-state">This filter is not available in your authorized partner scope.</div>`;
@@ -522,13 +668,38 @@ function filterDetailView() {
       <article class="detail-card"><h3>Filter & program</h3><dl class="detail-list">${field("Filter ID", row.id)}${field("Country", `${countryInfo(row).flag} ${countryInfo(row).name}`)}${field("Partner", partnerName)}${field("Deployment", row.deployment)}${field("Status", row.status)}${field("Scope check", row.scopeStatus)}</dl></article>
       <article class="detail-card"><h3>Household</h3><dl class="detail-list">${field("Family", row.family)}${field("Household code", row.householdCode)}${field("People", row.people || "—")}${field("Community", row.community)}</dl></article>
       <article class="detail-card"><h3>Field ownership</h3><dl class="detail-list">${field("Ambassador", row.ambassador)}${field("Installed by", row.surveyor)}${field("Distribution date", row.distributed, true)}${field("Follow-up status", row.followupStatus)}</dl></article>
-      <article class="detail-card wide-card"><h3>Follow-up timeline</h3><ol class="timeline"><li><strong>Filter distributed</strong><span>${date(row.distributed)} · ${display(row.surveyor)}</span></li><li><strong>Latest follow-up</strong><span>${date(row.lastFollowup)}</span></li><li><strong>Next follow-up due</strong><span>${date(row.followup)} · ${display(row.ambassador)}</span></li></ol></article>
+      <article class="detail-card wide-card"><h3>Filter lifecycle</h3>${lifecycleMini(row)}</article>
     </div>`;
+}
+
+function lifecycleRows() {
+  const term = lifecycleSearch.trim().toLowerCase();
+  const rows = countryScoped(state.filters).filter(row => `${row.id} ${row.country} ${row.deployment} ${row.community} ${row.family}`.toLowerCase().includes(term));
+  return rows.sort((a, b) => {
+    if (lifecycleSort === "newest") return dateValue(b.distributed) - dateValue(a.distributed) || a.id.localeCompare(b.id);
+    if (lifecycleSort === "oldest") return dateValue(a.distributed) - dateValue(b.distributed) || a.id.localeCompare(b.id);
+    if (lifecycleSort === "filter") return a.id.localeCompare(b.id);
+    const aStatus = lifecycleStatus(a);
+    const bStatus = lifecycleStatus(b);
+    return bStatus.overdueDays - aStatus.overdueDays || dateValue(a.followup) - dateValue(b.followup) || a.id.localeCompare(b.id);
+  });
+}
+
+function lifecycleWorkspace(rows = lifecycleRows()) {
+  if (!rows.length) return `<div class="empty-state">No filters match this partner, country, and search selection.</div>`;
+  const domain = lifecycleDomain(rows);
+  return `<div class="lifecycle-axis"><span>${date(new Date(domain.start).toISOString())}</span><strong>${translateText("Filter lifecycle", currentLanguage)}</strong><span>${date(new Date(domain.end).toISOString())}</span></div>
+    <div class="lifecycle-column-head"><span>Filter & community</span><span>Recorded events and next milestone</span><span>Last activity</span></div>
+    <div class="lifecycle-rows">${rows.map(row => lifecycleRow(row, domain)).join("")}</div>`;
 }
 
 function followupsView() {
   const rows = countryScoped(state.filters).filter(row => row.followup || row.followupStatus);
-  return `${sectionHeader("Follow-up schedule", `${number(rows.length)} filter records with follow-up information.`)}
+  const tabs = `<div class="view-switcher" role="group" aria-label="Follow-up view"><button class="${followupMode === "schedule" ? "active" : ""}" data-followup-mode="schedule">Schedule</button><button class="${followupMode === "lifecycles" ? "active" : ""}" data-followup-mode="lifecycles">Lifecycles</button></div>`;
+  if (followupMode === "lifecycles") return `${sectionHeader("Filter lifecycles", `${number(lifecycleRows().length)} filters across a shared operational timeline.`, tabs)}
+    <div class="notice lifecycle-notice"><b>How to read this</b><span>Solid dots are recorded field events. The hollow dot is the next scheduled milestone; red means it is overdue.</span></div>
+    <div class="panel lifecycle-panel"><div class="table-tools lifecycle-tools"><input class="search" id="lifecycleSearch" type="search" value="${escapeHtml(lifecycleSearch)}" placeholder="Search filter, deployment, community, or family"><select id="lifecycleSort" aria-label="Sort lifecycles"><option value="urgent" ${lifecycleSort === "urgent" ? "selected" : ""}>Most urgent</option><option value="newest" ${lifecycleSort === "newest" ? "selected" : ""}>Newest installed</option><option value="oldest" ${lifecycleSort === "oldest" ? "selected" : ""}>Oldest installed</option><option value="filter" ${lifecycleSort === "filter" ? "selected" : ""}>Filter ID</option></select>${countryFilters(state.filters)}</div><div id="lifecycleWorkspace" class="lifecycle-workspace">${lifecycleWorkspace()}</div></div>`;
+  return `${sectionHeader("Follow-up schedule", `${number(rows.length)} filter records with follow-up information.`, tabs)}
     <div class="panel"><div class="table-tools">${countryFilters(state.filters)}</div><div class="table-scroll"><table><thead><tr><th>Filter ID</th><th>Country / program</th><th>Community</th><th>Last follow-up</th><th>Next follow-up</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.map(row => `<tr class="clickable-row" data-filter-id="${escapeHtml(row.recordId)}"><td class="id" data-label="Filter ID">${display(row.id)}</td>${contextCell(row)}<td data-label="Community">${display(row.community)}</td><td data-label="Last follow-up">${date(row.lastFollowup)}</td><td data-label="Next follow-up">${date(row.followup)}</td><td data-label="Status"><span class="pill ${statusClass(row.followupStatus)}">${display(row.followupStatus)}</span></td></tr>`).join("") : `<tr><td colspan="6" class="empty-state">No follow-up records match this partner and country selection.</td></tr>`}</tbody></table></div></div>`;
 }
 
@@ -614,6 +785,22 @@ function render() {
     const rows = countryScoped(state.filters).filter(row => `${row.id} ${row.country} ${row.deployment} ${row.community} ${row.family}`.toLowerCase().includes(term));
     document.querySelector("#filterRows").innerHTML = filterRows(rows);
     translateDom(document.querySelector("#filterRows"));
+  });
+  document.querySelector("#lifecycleSearch")?.addEventListener("input", event => {
+    lifecycleSearch = event.target.value;
+    const workspace = document.querySelector("#lifecycleWorkspace");
+    if (workspace) {
+      workspace.innerHTML = lifecycleWorkspace();
+      translateDom(workspace);
+    }
+  });
+  document.querySelector("#lifecycleSort")?.addEventListener("change", event => {
+    lifecycleSort = event.target.value;
+    const workspace = document.querySelector("#lifecycleWorkspace");
+    if (workspace) {
+      workspace.innerHTML = lifecycleWorkspace();
+      translateDom(workspace);
+    }
   });
   syncLanguageUi();
   if (currentView === "map") requestAnimationFrame(mountRegistryMap);
@@ -704,8 +891,7 @@ document.addEventListener("click", event => {
     const open = languageMenu.hidden;
     languageMenu.hidden = !open;
     languageMenuButton.setAttribute("aria-expanded", String(open));
-    menuPanel.hidden = true;
-    menuButton.setAttribute("aria-expanded", "false");
+    setMenuOpen(false);
     return;
   }
   const languageTarget = event.target.closest("[data-language]");
@@ -721,27 +907,33 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#menuButton")) {
     const open = menuPanel.hidden;
-    menuPanel.hidden = !open;
-    menuButton.setAttribute("aria-expanded", String(open));
+    setMenuOpen(open);
     return;
   }
-  if (!event.target.closest("#menuPanel")) {
-    menuPanel.hidden = true;
-    menuButton.setAttribute("aria-expanded", "false");
+  if (event.target.closest("#closeMenu") || event.target === drawerScrim) {
+    setMenuOpen(false);
+    menuButton.focus({ preventScroll: true });
+    return;
   }
+  if (event.target.closest("#drawerLanguageButton")) { toggleDrawerPanel("drawerLanguageButton", "drawerLanguagePanel"); return; }
 const hubScroll = event.target.closest("[data-hub-scroll]");
   if (hubScroll) {
     currentView = "home";
     history.replaceState(null, "", "#home");
     render();
-    menuPanel.hidden = true;
-    menuButton.setAttribute("aria-expanded", "false");
+    setMenuOpen(false);
     requestAnimationFrame(() => document.querySelector(`#${hubScroll.dataset.hubScroll}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
     return;
   }
   const countryTarget = event.target.closest("[data-country]");
   if (countryTarget) {
     currentCountry = countryTarget.dataset.country;
+    render();
+    return;
+  }
+  const followupModeTarget = event.target.closest("[data-followup-mode]");
+  if (followupModeTarget) {
+    followupMode = followupModeTarget.dataset.followupMode;
     render();
     return;
   }
@@ -756,8 +948,7 @@ const hubScroll = event.target.closest("[data-hub-scroll]");
   }
   const target = event.target.closest("[data-view]");
   if (!target) return;
-  menuPanel.hidden = true;
-  menuButton.setAttribute("aria-expanded", "false");
+  setMenuOpen(false);
   currentView = target.dataset.view;
   if (currentView !== "filter-detail") selectedFilterId = null;
   history.replaceState(null, "", `#${currentView}`);
@@ -771,6 +962,11 @@ document.querySelector("#instructionsButton")?.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !menuPanel.hidden) {
+    setMenuOpen(false);
+    menuButton.focus({ preventScroll: true });
+    return;
+  }
   if ((event.key === "Enter" || event.key === " ") && event.target.matches("tr[data-filter-id]")) {
     event.preventDefault();
     event.target.querySelector(".record-link")?.click();
