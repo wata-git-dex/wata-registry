@@ -214,6 +214,7 @@ const ES = Object.freeze({
   "Solid dots are recorded field events. The hollow dot is the next scheduled milestone; red means it is overdue.": "Los puntos sólidos son eventos de campo registrados. El punto vacío es el próximo hito programado; rojo significa que está vencido.",
   "Every row uses the same calendar axis: newer events appear farther right. Solid dots are recorded field events, the vertical line is today, and hollow dots are scheduled milestones. Inventory records stay at the bottom and are never marked overdue.": "Cada fila usa el mismo eje calendario: los eventos más recientes aparecen más a la derecha. Los puntos sólidos son eventos de campo registrados, la línea vertical marca hoy y los puntos vacíos son hitos programados. Los registros en inventario permanecen al final y nunca aparecen como vencidos.",
   "Command Center": "Centro de Control",
+  "Operational visibility across": "Visibilidad operativa en",
   "Registry connected": "Registro conectado",
   "Registry offline": "Registro sin conexión",
   "Active filters": "Filtros activos",
@@ -364,6 +365,7 @@ function interpolateSpanish(text) {
   const rules = [
     [/^Updated (.+) · Read-only$/u, "Actualizado: $1 · Solo lectura"],
     [/^Updated (.+)$/u, "Actualizado: $1"],
+    [/^Operational visibility across (.+)\.$/u, "Visibilidad operativa en $1."],
     [/^(.+) filter registry\.$/u, "Registro de filtros de $1."],
     [/^(\d[\d,.]*) distributions · (\d[\d,.]*) follow-ups$/u, "$1 distribuciones · $2 seguimientos"],
     [/^(\d[\d,.]*) recorded families$/u, "$1 familias registradas"],

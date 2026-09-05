@@ -420,7 +420,7 @@ tr:last-child td { border-bottom: 0; }
 [data-theme="dark"] .pill.amber, [data-theme="dark"] .offline-chip { color: #f1c66f; background: #342714; }
 [data-theme="dark"] .pill.red { color: #ff9e9e; background: #381d22; }
 [data-theme="dark"] .pill.issue-open { color: #241b00; background: #f7cf4b; }
-[data-theme="dark"] .stat small, [data-theme="dark"] .context-cell small, [data-theme="dark"] .detail-card h3 { color: var(--water); }
+[data-theme="dark"] .stat small, [data-theme="dark"] .context-cell small, [data-theme="dark"] .detail-card h3, [data-theme="dark"] .lifecycle-axis strong { color: var(--water); }
 .empty-state { padding: 56px 20px; color: var(--muted); text-align: center; }
 .retry-button { margin-top: 20px; padding: 11px 16px; color: var(--navy); background: var(--water); border: 0; border-radius: 12px; font-weight: 850; }
 .mobile-nav { display: none; }
