@@ -429,13 +429,22 @@ function commandCenterKpis() {
   </div>`;
 }
 
+function commandLifecyclePanel() {
+  const rows = lifecycleRows().slice(0, 6);
+  return `<section class="command-panel command-lifecycle">
+    <div class="command-panel-head"><div><span class="command-panel-icon">${icons.followup}</span><div><h2>Filter lifecycle</h2><p>Newest installed filters on one shared calendar axis.</p></div></div><button class="link-button" data-view="followups" data-followup-target="lifecycles">View all lifecycles</button></div>
+    <div class="lifecycle-workspace">${lifecycleWorkspace(rows)}</div>
+  </section>`;
+}
+
 function commandCenterHomeView() {
   const generated = state.meta?.generatedAt ? `Updated ${date(state.meta.generatedAt)}` : "Live registry";
   return `<div class="command-head">
     <div><p class="eyebrow">W.A.T.A. Filter Registry</p><h1>Command Center</h1><p>Operational visibility across ${escapeHtml(partnerDisplayName())}.</p></div>
     <div class="command-sync"><span class="status-dot ${navigator.onLine ? "connected" : ""}"></span><div><strong>${navigator.onLine ? "Registry connected" : "Registry offline"}</strong><small>${navigator.onLine ? `${escapeHtml(generated)} · Read-only` : "Private Registry data is never cached offline."}</small></div></div>
   </div>
-  ${commandCenterKpis()}`;
+  ${commandCenterKpis()}
+  ${commandLifecyclePanel()}`;
 }
 
 function homeView() {
@@ -1014,6 +1023,7 @@ const hubScroll = event.target.closest("[data-hub-scroll]");
   const target = event.target.closest("[data-view]");
   if (!target) return;
   setMenuOpen(false);
+  if (target.dataset.followupTarget) followupMode = target.dataset.followupTarget;
   currentView = target.dataset.view;
   if (currentView !== "filter-detail") selectedFilterId = null;
   history.replaceState(null, "", `#${currentView}`);

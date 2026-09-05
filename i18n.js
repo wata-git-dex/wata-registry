@@ -195,6 +195,8 @@ const ES = Object.freeze({
   "Follow-up status": "Estado del seguimiento",
   "Follow-up timeline": "Cronología de seguimiento",
   "Filter lifecycle": "Ciclo de vida del filtro",
+  "Newest installed filters on one shared calendar axis.": "Filtros instalados más recientemente en un eje calendario compartido.",
+  "View all lifecycles": "Ver todos los ciclos de vida",
   "Today": "Hoy",
   "Filter lifecycles": "Ciclos de vida de los filtros",
   "Schedule": "Calendario",
