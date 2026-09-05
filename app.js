@@ -460,6 +460,21 @@ function commandFollowupQueue() {
   </section>`;
 }
 
+function commandImpactPanel() {
+  const impact = impactForScope();
+  const metrics = [
+    { label: "Distribution events", value: Number(impact.distributions || 0), tone: "water" },
+    { label: "Follow-up events", value: Number(impact.followups || 0), tone: "blue" },
+    { label: "Families recorded", value: Number(impact.families || 0), tone: "green" },
+    { label: "People reached", value: Number(impact.people || 0), tone: "cyan" }
+  ];
+  const maximum = Math.max(1, ...metrics.map(metric => metric.value));
+  return `<section class="command-panel command-impact">
+    <div class="command-panel-head"><div><span class="command-panel-icon">${icons.impact}</span><div><h2>Health & water trends</h2><p>Current Registry indicators. Trend-over-time data is not available yet.</p></div></div><button class="link-button" data-view="impact">Open impact</button></div>
+    <div class="command-impact-chart" role="img" aria-label="Current Registry impact totals">${metrics.map(metric => `<div class="command-impact-row"><span>${translateText(metric.label, currentLanguage)}</span><i><b class="${metric.tone}" style="--width:${Math.max(2, (metric.value / maximum) * 100)}%"></b></i><strong>${number(metric.value)}</strong></div>`).join("")}</div>
+  </section>`;
+}
+
 function commandCenterHomeView() {
   const generated = state.meta?.generatedAt ? `Updated ${date(state.meta.generatedAt)}` : "Live registry";
   return `<div class="command-head">
@@ -467,7 +482,8 @@ function commandCenterHomeView() {
     <div class="command-sync"><span class="status-dot ${navigator.onLine ? "connected" : ""}"></span><div><strong>${navigator.onLine ? "Registry connected" : "Registry offline"}</strong><small>${navigator.onLine ? `${escapeHtml(generated)} · Read-only` : "Private Registry data is never cached offline."}</small></div></div>
   </div>
   ${commandCenterKpis()}
-  <div class="command-main-grid">${commandLifecyclePanel()}${commandFollowupQueue()}</div>`;
+  <div class="command-main-grid">${commandLifecyclePanel()}${commandFollowupQueue()}</div>
+  ${commandImpactPanel()}`;
 }
 
 function homeView() {

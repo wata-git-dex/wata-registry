@@ -206,6 +206,15 @@ button.command-kpi:hover { border-color: color-mix(in srgb,var(--water) 48%,var(
 .command-queue-badge { display: inline-flex !important; place-self: center start; width: auto; padding: 5px 7px; color: var(--muted); background: var(--surface-soft); border: 1px solid var(--line); border-radius: 7px; font-size: 8px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .command-queue-badge.soon { color: #5b4300; background: #f7cf4b; border-color: #f7cf4b; }
 .command-queue-badge.overdue { color: white; background: #ed8624; border-color: #ed8624; }
+.command-impact-chart { display: grid; gap: 13px; padding: 5px 2px 2px; }
+.command-impact-row { display: grid; grid-template-columns: minmax(130px,190px) minmax(120px,1fr) 58px; align-items: center; gap: 12px; }
+.command-impact-row > span { color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.command-impact-row > i { height: 10px; overflow: hidden; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 99px; }
+.command-impact-row > i > b { display: block; width: var(--width); height: 100%; background: var(--water); border-radius: inherit; }
+.command-impact-row > i > b.blue { background: var(--ocean); }
+.command-impact-row > i > b.green { background: var(--green); }
+.command-impact-row > i > b.cyan { background: linear-gradient(90deg,var(--ocean),var(--water)); }
+.command-impact-row > strong { color: var(--ink); font-size: 13px; text-align: right; }
 .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr); gap: 24px; padding: clamp(24px, 4vw, 42px); color: white; background-color: var(--navy); background-image: linear-gradient(125deg, rgba(48,82,164,.96), rgba(18,36,73,.97)), url("assets/brand/topography.svg"); background-size: auto, 720px auto; border-radius: 28px; box-shadow: var(--shadow); }
 .hero::after { content: ""; position: absolute; width: 360px; height: 360px; right: -170px; top: -190px; border: 62px solid rgba(118, 222, 231, .12); border-radius: 50%; }
 .eyebrow { margin: 0 0 11px; color: #8de9ff; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .13em; }
@@ -452,6 +461,7 @@ tr:last-child td { border-bottom: 0; }
   .command-queue-list { margin: 0; border: 0; }
   .command-queue-row { grid-template-columns: 64px minmax(0,1fr); padding: 11px 0; }
   .command-queue-row > span:last-child { grid-column: 2; text-align: left; }
+  .command-impact-row { grid-template-columns: minmax(104px,1fr) minmax(80px,1.4fr) 48px; gap: 8px; }
   .site-footer { margin: 0 14px; padding-bottom: 104px; }
   .hero { grid-template-columns: 1fr; padding: 25px 21px; border-radius: 22px; }
   h1 { font-size: 39px; }
