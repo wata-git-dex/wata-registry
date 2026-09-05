@@ -437,6 +437,29 @@ function commandLifecyclePanel() {
   </section>`;
 }
 
+function commandFollowupQueue() {
+  const today = todayKey();
+  const rows = countryScoped(state.filters)
+    .filter(row => !isInventory(row) && dateKey(row.followup))
+    .sort((a, b) => dateValue(a.followup) - dateValue(b.followup) || String(a.id).localeCompare(String(b.id)))
+    .slice(0, 6);
+  const items = rows.map(row => {
+    const due = dateKey(row.followup);
+    const overdue = due < today;
+    const distance = overdue ? daysBetween(due, today) : daysBetween(today, due);
+    const timing = overdue ? `${number(distance)} days overdue` : distance === 0 ? "Due today" : `Due in ${number(distance)} days`;
+    return `<button class="command-queue-row" type="button" data-filter-id="${escapeHtml(row.recordId)}">
+      <span class="command-queue-badge ${overdue ? "overdue" : distance <= 7 ? "soon" : ""}">${overdue ? "Overdue" : distance <= 7 ? "Soon" : "Scheduled"}</span>
+      <span><strong>${display(row.family, "Family not assigned")}</strong><small>${display(row.id)} · ${countryInfo(row).flag} ${display(row.community)}</small></span>
+      <span><strong>${date(due)}</strong><small>${escapeHtml(translateText(timing, currentLanguage))}</small></span>
+    </button>`;
+  }).join("");
+  return `<section class="command-panel command-queue">
+    <div class="command-panel-head"><div><span class="command-panel-icon">${icons.followup}</span><div><h2>Follow-up queue</h2><p>Overdue first, then the soonest scheduled visit.</p></div></div><button class="link-button" data-view="followups">View schedule</button></div>
+    <div class="command-queue-list">${items || `<div class="empty-state">No scheduled follow-ups in this view.</div>`}</div>
+  </section>`;
+}
+
 function commandCenterHomeView() {
   const generated = state.meta?.generatedAt ? `Updated ${date(state.meta.generatedAt)}` : "Live registry";
   return `<div class="command-head">
@@ -444,7 +467,7 @@ function commandCenterHomeView() {
     <div class="command-sync"><span class="status-dot ${navigator.onLine ? "connected" : ""}"></span><div><strong>${navigator.onLine ? "Registry connected" : "Registry offline"}</strong><small>${navigator.onLine ? `${escapeHtml(generated)} · Read-only` : "Private Registry data is never cached offline."}</small></div></div>
   </div>
   ${commandCenterKpis()}
-  ${commandLifecyclePanel()}`;
+  <div class="command-main-grid">${commandLifecyclePanel()}${commandFollowupQueue()}</div>`;
 }
 
 function homeView() {
