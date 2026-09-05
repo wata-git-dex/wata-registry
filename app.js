@@ -38,7 +38,7 @@ let currentCountry = "all";
 let registryMap = null;
 let followupMode = "schedule";
 let lifecycleSearch = "";
-let lifecycleSort = "urgent";
+let lifecycleSort = "newest";
 
 const countryProfiles = {
   CO: { name: "Colombia", flag: "🇨🇴", x: 29, y: 45, center: [4.5, -74], zoom: 5 },
@@ -229,7 +229,7 @@ function countryFilters(items) {
   const countries = countryOptions(items);
   if (countries.length < 2 && !countries.some(country => country.code === "unknown")) return "";
   return `<div class="country-filters" role="group" aria-label="Filter by country">
-    <button class="country-button ${currentCountry === "all" ? "active" : ""}" data-country="all" aria-label="Show all countries" title="All countries">All <span>${scoped(items).length}</span></button>
+    <button class="country-button country-flag ${currentCountry === "all" ? "active" : ""}" data-country="all" aria-label="Show all countries" title="All countries">🌍<span>${scoped(items).length}</span></button>
     ${countries.map(country => `<button class="country-button country-flag ${currentCountry === country.code ? "active" : ""}" data-country="${escapeHtml(country.code)}" aria-label="Show ${escapeHtml(country.name)}" title="${escapeHtml(country.name)}">${country.flag}<span>${country.count}</span></button>`).join("")}
   </div>`;
 }
@@ -283,10 +283,10 @@ function applyTheme(theme, persist = true) {
   const dark = theme === "dark";
   themeToggle.setAttribute("aria-pressed", String(dark));
   themeToggle.setAttribute("aria-label", translateText("Switch color theme", currentLanguage));
-  themeToggle.querySelector(".theme-icon").textContent = dark ? "☀" : "☾";
+  themeToggle.querySelector(".theme-icon").textContent = dark ? "☾" : "☀";
   themeToggle.querySelector(".theme-label").textContent = currentLanguage === "es"
-    ? `Modo ${translateText(dark ? "Light" : "Dark", currentLanguage).toLowerCase()}`
-    : (dark ? "Light" : "Dark");
+    ? `Modo ${translateText(dark ? "Dark" : "Light", currentLanguage).toLowerCase()}`
+    : (dark ? "Dark" : "Light");
   themeToggle.querySelector(".theme-mode").textContent = currentLanguage === "es" ? "" : "mode";
   const appearanceLabel = themeToggle.querySelector("strong");
   if (appearanceLabel) appearanceLabel.textContent = translateText("Appearance", currentLanguage);
@@ -400,7 +400,7 @@ function hubHomeView() {
 
 function commandCenterMetrics() {
   const rows = scoped(state.filters);
-  const active = rows.filter(row => mapMarkerState(row).key !== "dropoff");
+  const active = rows.filter(row => !isInventory(row));
   const people = rows.reduce((total, row) => total + Number(row.people || 0), 0);
   const today = todayKey();
   const sevenDays = new Date(dateValue(today) + (7 * 86400000)).toISOString().slice(0, 10);
@@ -469,6 +469,20 @@ function globalImpactMap() {
   </div>`;
 }
 
+function isInventory(row) {
+  const status = String(row.status || "").toLowerCase();
+  return status.includes("drop") || status.includes("inventory") || status.includes("unassigned") || status.includes("not assigned");
+}
+
+function hasOpenIssue(row) {
+  const filterIds = new Set([row.recordId, row.id].filter(Boolean).map(value => String(value).trim().toLowerCase()));
+  return scoped(state.issues).some(issue => {
+    const status = String(issue.status || "").toLowerCase();
+    const linked = String(issue.filter || "").trim().toLowerCase();
+    return linked && filterIds.has(linked) && !status.includes("closed") && !status.includes("resolved");
+  });
+}
+
 function mapMarkerState(row) {
   const status = String(row.status || "").toLowerCase();
   const followupStatus = String(row.followupStatus || "").toLowerCase();
@@ -477,11 +491,12 @@ function mapMarkerState(row) {
   dueSoon.setDate(dueSoon.getDate() + 30);
   const dateKey = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   const dueKey = String(row.followup || "").slice(0, 10);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey < dateKey(today)) return { key: "overdue", label: "Follow-up overdue", color: "#e45757", priority: 5 };
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey <= dateKey(dueSoon)) return { key: "due-soon", label: "Follow-up due soon", color: "#f0a43a", priority: 4 };
-  if (status.includes("drop")) return { key: "dropoff", label: "Drop-off", color: "#8f6bd8", priority: 3 };
-  if (row.lastFollowup || followupStatus.includes("complete") || followupStatus.includes("current")) return { key: "current", label: "Follow-up current", color: "#2fb785", priority: 2 };
-  return { key: "distributed", label: "Distributed", color: "#19b9df", priority: 1 };
+  if (isInventory(row)) return { key: "inventory", label: "In inventory", color: "#8295a0", priority: 1 };
+  if (hasOpenIssue(row)) return { key: "issue", label: "Data issue", color: "#f2c94c", priority: 6 };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey < dateKey(today)) return { key: "overdue", label: "Missing follow-up", color: "#ed8624", priority: 5 };
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey <= dateKey(dueSoon)) return { key: "due-soon", label: "Follow-up due soon", color: "#e3b72f", priority: 4 };
+  if (row.lastFollowup || followupStatus.includes("complete") || followupStatus.includes("current")) return { key: "current", label: "Followed up", color: "#367ee8", priority: 3 };
+  return { key: "distributed", label: "Distributed", color: "#2fb785", priority: 2 };
 }
 
 function mappableRows() {
@@ -495,20 +510,21 @@ function mapView() {
   const counts = mapped.reduce((result, row) => {
     result[mapMarkerState(row).key] += 1;
     return result;
-  }, { distributed: 0, current: 0, "due-soon": 0, overdue: 0, dropoff: 0 });
+  }, { distributed: 0, current: 0, "due-soon": 0, overdue: 0, issue: 0, inventory: 0 });
   return `${sectionHeader("Filter map", `${number(mapped.length)} mapped filters in ${partnerDisplayName()}`)}
     <div class="notice"><b>Privacy-safe operational map</b><span>Locations are rounded to roughly a neighborhood scale. Records without validated installation coordinates are counted below but never guessed.</span></div>
     <div class="panel map-panel">
       <div class="map-toolbar">${countryFilters(state.filters)}<div class="map-coverage"><strong>${number(mapped.length)}</strong><span>mapped</span><strong>${number(missing)}</strong><span>missing coordinates</span></div></div>
       <div class="map-legend" aria-label="Map legend">
-        <span><i style="--marker:#19b9df"></i>Distributed <b>${number(counts.distributed)}</b></span>
-        <span><i style="--marker:#2fb785"></i>Follow-up current <b>${number(counts.current)}</b></span>
-        <span><i style="--marker:#f0a43a"></i>Due soon <b>${number(counts["due-soon"])}</b></span>
-        <span><i style="--marker:#e45757"></i>Overdue <b>${number(counts.overdue)}</b></span>
-        <span><i style="--marker:#8f6bd8"></i>Drop-off <b>${number(counts.dropoff)}</b></span>
+        <span><i style="--marker:#2fb785"></i>Distributed <b>${number(counts.distributed)}</b></span>
+        <span><i style="--marker:#367ee8"></i>Followed up <b>${number(counts.current)}</b></span>
+        <span><i style="--marker:#e3b72f"></i>Due soon <b>${number(counts["due-soon"])}</b></span>
+        <span><i style="--marker:#ed8624"></i>Missing follow-up <b>${number(counts.overdue)}</b></span>
+        <span><i style="--marker:#f2c94c"></i>Data issue <b>${number(counts.issue)}</b></span>
+        <span><i style="--marker:#8295a0"></i>In inventory <b>${number(counts.inventory)}</b></span>
       </div>
       <div id="registryMap" class="registry-map" role="region" aria-label="Interactive map of authorized water filters"><div class="map-loading">Loading secure map…</div></div>
-      <p class="map-footnote">Map tiles require an internet connection. Filter records and permissions remain read-only and come from Airtable.</p>
+      <p class="map-footnote">Colors show each filter\'s current operational state, not historical survey totals. Map tiles require an internet connection. Filter records and permissions remain read-only and come from Airtable.</p>
     </div>`;
 }
 
@@ -609,7 +625,7 @@ function lifecycleEvents(row) {
     .filter(event => dateKey(event.date) && ["Distribution", "Follow-Up", "Drop-Off"].includes(event.type))
     .map(event => ({ ...event, date: dateKey(event.date) }));
   const hasDistribution = events.some(event => event.type === "Distribution");
-  if (!hasDistribution && dateKey(row.distributed)) events.push({ recordId: `derived-install-${row.recordId}`, date: dateKey(row.distributed), type: "Distribution", derived: true });
+  if (!hasDistribution && !isInventory(row) && dateKey(row.distributed)) events.push({ recordId: `derived-install-${row.recordId}`, date: dateKey(row.distributed), type: "Distribution", derived: true });
   const hasLatestFollowup = events.some(event => event.type === "Follow-Up" && event.date === dateKey(row.lastFollowup));
   if (!hasLatestFollowup && dateKey(row.lastFollowup)) events.push({ recordId: `derived-followup-${row.recordId}`, date: dateKey(row.lastFollowup), type: "Follow-Up", derived: true });
   return events.sort((a, b) => a.date.localeCompare(b.date) || a.type.localeCompare(b.type) || a.recordId.localeCompare(b.recordId));
@@ -644,13 +660,14 @@ function lifecycleStatus(row) {
   const events = lifecycleEvents(row);
   const followups = events.filter(event => event.type === "Follow-Up");
   const last = followups.at(-1) || events.at(-1);
-  const due = dateKey(row.followup);
+  const inventory = isInventory(row);
+  const due = inventory ? "" : dateKey(row.followup);
   const overdueDays = due && due < todayKey() ? daysBetween(due, todayKey()) : 0;
-  return { events, followups, last, due, overdueDays };
+  return { events, followups, last, due, overdueDays, inventory };
 }
 
 function lifecycleRow(row, domain, compact = false) {
-  const { events, followups, last, due, overdueDays } = lifecycleStatus(row);
+  const { events, followups, last, due, overdueDays, inventory } = lifecycleStatus(row);
   let followupNumber = 0;
   const markers = events.map(event => {
     if (event.type === "Follow-Up") followupNumber += 1;
@@ -669,17 +686,18 @@ function lifecycleRow(row, domain, compact = false) {
   const dueStart = last ? timelinePosition(last.date, domain) : timelinePosition(due, domain);
   const dueEnd = timelinePosition(due, domain);
   const dueMarker = dueAfterLast ? `<span class="lifecycle-segment scheduled ${overdueDays ? "overdue" : ""}" style="--start:${dueStart}%;--width:${Math.max(0, dueEnd - dueStart)}%"></span><button type="button" class="lifecycle-marker due ${overdueDays ? "overdue" : ""}" style="--position:${dueEnd}%" data-filter-id="${escapeHtml(row.recordId)}" aria-label="${escapeHtml(`${translateText(overdueDays ? "Overdue milestone" : "Next milestone", currentLanguage)}: ${date(due)}`)}" title="${escapeHtml(`${translateText(overdueDays ? "Overdue milestone" : "Next milestone", currentLanguage)} · ${date(due)}`)}"><span></span></button>` : "";
+  const todayPosition = timelinePosition(todayKey(), domain);
   const elapsed = last ? Math.max(0, daysBetween(last.date, todayKey())) : 0;
-  const activityLabel = followups.length
+  const activityLabel = inventory ? translateText("In inventory", currentLanguage) : followups.length
     ? `${number(elapsed)} ${translateText("days since follow-up", currentLanguage)}`
     : last ? `${number(elapsed)} ${translateText("days since installation", currentLanguage)}` : translateText("No dated activity", currentLanguage);
-  const secondary = overdueDays
+  const secondary = inventory ? translateText("Not installed", currentLanguage) : overdueDays
     ? `${number(overdueDays)} ${translateText("days overdue", currentLanguage)}`
     : followups.length ? `${number(followups.length)} ${translateText(followups.length === 1 ? "follow-up completed" : "follow-ups completed", currentLanguage)}` : translateText("Never followed up", currentLanguage);
-  return `<article class="lifecycle-row ${compact ? "compact" : ""}" data-lifecycle-filter="${escapeHtml(row.recordId)}">
+  return `<article class="lifecycle-row ${compact ? "compact" : ""} ${inventory ? "inventory" : ""}" data-lifecycle-filter="${escapeHtml(row.recordId)}">
     <button class="lifecycle-identity" data-filter-id="${escapeHtml(row.recordId)}"><strong>${display(row.id)}</strong><span>${countryInfo(row).flag} ${display(row.community)}</span><small>${display(row.deployment)}</small></button>
-    <div class="lifecycle-track" aria-label="${escapeHtml(`${row.id} lifecycle`)}"><span class="lifecycle-baseline"></span>${segments}${dueMarker}${markers}</div>
-    <div class="lifecycle-recency ${overdueDays ? "overdue" : ""}"><strong>${activityLabel}</strong><span>${secondary}</span></div>
+    <div class="lifecycle-track" aria-label="${escapeHtml(`${row.id} lifecycle`)}"><span class="lifecycle-baseline"></span><span class="lifecycle-today" style="--position:${todayPosition}%" aria-hidden="true"></span>${segments}${dueMarker}${markers}</div>
+    <div class="lifecycle-recency ${overdueDays ? "overdue" : ""} ${inventory ? "inventory" : ""}"><strong>${activityLabel}</strong><span>${secondary}</span></div>
   </article>`;
 }
 
@@ -715,8 +733,12 @@ function lifecycleRows() {
   const term = lifecycleSearch.trim().toLowerCase();
   const rows = countryScoped(state.filters).filter(row => `${row.id} ${row.country} ${row.deployment} ${row.community} ${row.family}`.toLowerCase().includes(term));
   return rows.sort((a, b) => {
-    if (lifecycleSort === "newest") return dateValue(b.distributed) - dateValue(a.distributed) || a.id.localeCompare(b.id);
-    if (lifecycleSort === "oldest") return dateValue(a.distributed) - dateValue(b.distributed) || a.id.localeCompare(b.id);
+    const inventoryOrder = Number(isInventory(a)) - Number(isInventory(b));
+    if (inventoryOrder) return inventoryOrder;
+    const aInstalled = Number.isFinite(dateValue(a.distributed)) ? dateValue(a.distributed) : -Infinity;
+    const bInstalled = Number.isFinite(dateValue(b.distributed)) ? dateValue(b.distributed) : -Infinity;
+    if (lifecycleSort === "newest") return bInstalled - aInstalled || a.id.localeCompare(b.id);
+    if (lifecycleSort === "oldest") return aInstalled - bInstalled || a.id.localeCompare(b.id);
     if (lifecycleSort === "filter") return a.id.localeCompare(b.id);
     const aStatus = lifecycleStatus(a);
     const bStatus = lifecycleStatus(b);
@@ -727,7 +749,8 @@ function lifecycleRows() {
 function lifecycleWorkspace(rows = lifecycleRows()) {
   if (!rows.length) return `<div class="empty-state">No filters match this partner, country, and search selection.</div>`;
   const domain = lifecycleDomain(rows);
-  return `<div class="lifecycle-axis"><span>${date(new Date(domain.start).toISOString())}</span><strong>${translateText("Filter lifecycle", currentLanguage)}</strong><span>${date(new Date(domain.end).toISOString())}</span></div>
+  const todayPosition = timelinePosition(todayKey(), domain);
+  return `<div class="lifecycle-axis"><span>${date(new Date(domain.start).toISOString())}</span><strong><span class="lifecycle-axis-title">${translateText("Filter lifecycle", currentLanguage)}</span><i style="--position:${todayPosition}%">Today</i></strong><span>${date(new Date(domain.end).toISOString())}</span></div>
     <div class="lifecycle-column-head"><span>Filter & community</span><span>Recorded events and next milestone</span><span>Last activity</span></div>
     <div class="lifecycle-rows">${rows.map(row => lifecycleRow(row, domain)).join("")}</div>`;
 }
@@ -736,14 +759,18 @@ function followupsView() {
   const rows = countryScoped(state.filters).filter(row => row.followup || row.followupStatus);
   const tabs = `<div class="view-switcher" role="group" aria-label="Follow-up view"><button class="${followupMode === "schedule" ? "active" : ""}" data-followup-mode="schedule">Schedule</button><button class="${followupMode === "lifecycles" ? "active" : ""}" data-followup-mode="lifecycles">Lifecycles</button></div>`;
   if (followupMode === "lifecycles") return `${sectionHeader("Filter lifecycles", `${number(lifecycleRows().length)} filters across a shared operational timeline.`, tabs)}
-    <div class="notice lifecycle-notice"><b>How to read this</b><span>Solid dots are recorded field events. The hollow dot is the next scheduled milestone; red means it is overdue.</span></div>
+    <div class="notice lifecycle-notice"><b>How to read this</b><span>Every row uses the same calendar axis: newer events appear farther right. Solid dots are recorded field events, the vertical line is today, and hollow dots are scheduled milestones. Inventory records stay at the bottom and are never marked overdue.</span></div>
     <div class="panel lifecycle-panel"><div class="table-tools lifecycle-tools"><input class="search" id="lifecycleSearch" type="search" value="${escapeHtml(lifecycleSearch)}" placeholder="Search filter, deployment, community, or family"><select id="lifecycleSort" aria-label="Sort lifecycles"><option value="urgent" ${lifecycleSort === "urgent" ? "selected" : ""}>Most urgent</option><option value="newest" ${lifecycleSort === "newest" ? "selected" : ""}>Newest installed</option><option value="oldest" ${lifecycleSort === "oldest" ? "selected" : ""}>Oldest installed</option><option value="filter" ${lifecycleSort === "filter" ? "selected" : ""}>Filter ID</option></select>${countryFilters(state.filters)}</div><div id="lifecycleWorkspace" class="lifecycle-workspace">${lifecycleWorkspace()}</div></div>`;
   return `${sectionHeader("Follow-up schedule", `${number(rows.length)} filter records with follow-up information.`, tabs)}
     <div class="panel"><div class="table-tools">${countryFilters(state.filters)}</div><div class="table-scroll"><table><thead><tr><th>Filter ID</th><th>Country / program</th><th>Community</th><th>Last follow-up</th><th>Next follow-up</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.map(row => `<tr class="clickable-row" data-filter-id="${escapeHtml(row.recordId)}"><td class="id" data-label="Filter ID">${display(row.id)}</td>${contextCell(row)}<td data-label="Community">${display(row.community)}</td><td data-label="Last follow-up">${date(row.lastFollowup)}</td><td data-label="Next follow-up">${date(row.followup)}</td><td data-label="Status"><span class="pill ${statusClass(row.followupStatus)}">${display(row.followupStatus)}</span></td></tr>`).join("") : `<tr><td colspan="6" class="empty-state">No follow-up records match this partner and country selection.</td></tr>`}</tbody></table></div></div>`;
 }
 
 function issuesTable(rows, controls = true) {
-  return `<div class="panel">${controls ? `<div class="table-tools">${countryFilters(state.issues)}</div>` : ""}<div class="table-scroll"><table><thead><tr><th>Issue ID</th><th>Country / program</th><th>Problem</th><th>Filter</th><th>Source</th><th>Date</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.map(row => `<tr><td class="id" data-label="Issue ID">${display(row.id)}</td>${contextCell(row)}<td data-label="Problem">${display(row.type)}</td><td data-label="Filter">${display(row.filter)}</td><td data-label="Source">${display(row.source)}</td><td data-label="Date">${date(row.date)}</td><td data-label="Status"><span class="pill ${statusClass(`${row.priority} ${row.status}`)}">${display(row.status)}</span></td></tr>`).join("") : `<tr><td colspan="7" class="empty-state">No portal-visible issues match this partner and country selection.</td></tr>`}</tbody></table></div></div>`;
+  return `<div class="panel">${controls ? `<div class="table-tools">${countryFilters(state.issues)}</div>` : ""}<div class="table-scroll"><table><thead><tr><th>Issue ID</th><th>Country / program</th><th>Problem</th><th>Filter</th><th>Source</th><th>Date</th><th>Status</th></tr></thead><tbody>${rows.length ? rows.map(row => {
+    const issueStatus = String(row.status || "").toLowerCase();
+    const statusTone = !issueStatus.includes("closed") && !issueStatus.includes("resolved") ? "issue-open" : statusClass(`${row.priority} ${row.status}`);
+    return `<tr><td class="id" data-label="Issue ID">${display(row.id)}</td>${contextCell(row)}<td data-label="Problem">${display(row.type)}</td><td data-label="Filter">${display(row.filter)}</td><td data-label="Source">${display(row.source)}</td><td data-label="Date">${date(row.date)}</td><td data-label="Status"><span class="pill ${statusTone}">${display(row.status)}</span></td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty-state">No portal-visible issues match this partner and country selection.</td></tr>`}</tbody></table></div></div>`;
 }
 
 function issuesView() {
