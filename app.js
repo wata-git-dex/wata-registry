@@ -32,18 +32,13 @@ document.documentElement.lang = currentLanguage;
 document.title = isPortalHost ? "W.A.T.A. Filter Registry" : "W.A.T.A. Tech Hub";
 const initialRoute = isPortalHost ? location.hash.slice(1) : "";
 let selectedFilterId = initialRoute.startsWith("filter/") ? decodeURIComponent(initialRoute.slice(7)) : null;
-let currentView = selectedFilterId ? "filter-detail" : initialRoute || (isPortalHost ? "portal" : "home");
+let currentView = selectedFilterId ? "filter-detail" : initialRoute || "home";
 let currentScope = "all";
 let currentCountry = "all";
 let registryMap = null;
 let followupMode = "schedule";
 let lifecycleSearch = "";
 let lifecycleSort = "urgent";
-
-if (isPortalHost) {
-  document.querySelector(".brand")?.setAttribute("href", "#portal");
-  document.querySelectorAll('[data-view="home"]').forEach(element => { element.dataset.view = "portal"; });
-}
 
 const countryProfiles = {
   CO: { name: "Colombia", flag: "🇨🇴", x: 29, y: 45, center: [4.5, -74], zoom: 5 },
@@ -397,10 +392,54 @@ function toolCard(tool) {
   </article>`;
 }
 
-function homeView() {
+function hubHomeView() {
   const readyCount = state.tools.filter(tool => tool.status === "ready").length;
   return `<div class="hub-app-head" id="apps"><div><p class="eyebrow">Your apps</p><h1>Choose where you want to go.</h1></div><span>${readyCount} ready</span></div>
   <div class="tool-grid hub-tool-grid">${state.tools.map(toolCard).join("")}</div>`;
+}
+
+function commandCenterMetrics() {
+  const rows = scoped(state.filters);
+  const active = rows.filter(row => mapMarkerState(row).key !== "dropoff");
+  const people = rows.reduce((total, row) => total + Number(row.people || 0), 0);
+  const today = todayKey();
+  const sevenDays = new Date(dateValue(today) + (7 * 86400000)).toISOString().slice(0, 10);
+  const dueSoon = active.filter(row => {
+    const due = dateKey(row.followup);
+    return due && due >= today && due <= sevenDays;
+  });
+  const scheduled = active.filter(row => dateKey(row.followup));
+  const onTrack = scheduled.filter(row => lifecycleStatus(row).overdueDays === 0);
+  return {
+    active: active.length,
+    total: rows.length,
+    people,
+    dueSoon: dueSoon.length,
+    onTrackRate: scheduled.length ? Math.round((onTrack.length / scheduled.length) * 100) : null
+  };
+}
+
+function commandCenterKpis() {
+  const metrics = commandCenterMetrics();
+  return `<div class="command-kpis" aria-label="Registry command center metrics">
+    <button class="command-kpi" data-view="filters"><span>Active filters</span><strong>${number(metrics.active)} <small>/ ${number(metrics.total)}</small></strong><em>Open filter registry →</em></button>
+    <article class="command-kpi"><span>People reached</span><strong>${number(metrics.people)}</strong><em>Current authorized scope</em></article>
+    <button class="command-kpi warning" data-view="followups"><span>Follow-ups due · 7 days</span><strong>${number(metrics.dueSoon)}</strong><em>Open follow-up queue →</em></button>
+    <button class="command-kpi ${metrics.onTrackRate === null || metrics.onTrackRate >= 80 ? "healthy" : "warning"}" data-view="followups"><span>On-track rate</span><strong>${metrics.onTrackRate === null ? "—" : `${number(metrics.onTrackRate)}<small>%</small>`}</strong><em>Scheduled active filters</em></button>
+  </div>`;
+}
+
+function commandCenterHomeView() {
+  const generated = state.meta?.generatedAt ? `Updated ${date(state.meta.generatedAt)}` : "Live registry";
+  return `<div class="command-head">
+    <div><p class="eyebrow">W.A.T.A. Filter Registry</p><h1>Command Center</h1><p>Operational visibility across ${escapeHtml(partnerDisplayName())}.</p></div>
+    <div class="command-sync"><span class="status-dot ${navigator.onLine ? "connected" : ""}"></span><div><strong>${navigator.onLine ? "Registry connected" : "Registry offline"}</strong><small>${navigator.onLine ? `${escapeHtml(generated)} · Read-only` : "Private Registry data is never cached offline."}</small></div></div>
+  </div>
+  ${commandCenterKpis()}`;
+}
+
+function homeView() {
+  return isPortalHost ? commandCenterHomeView() : hubHomeView();
 }
 
 function syncHubNavigation() {
@@ -756,13 +795,13 @@ function errorView() {
   return `<div class="hero"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="hero-copy">${forbidden ? accessHelp : "No records were changed. Try again after the connection is restored."}</p><button class="retry-button" id="retryButton">Try again</button></div></div>`;
 }
 
-const portalViews = new Set(["portal", "map", "impact", "filters", "filter-detail", "followups", "issues"]);
+const portalViews = new Set(["home", "portal", "map", "impact", "filters", "filter-detail", "followups", "issues"]);
 
 function syncChrome() {
   const hasPortal = isPortalHost && Boolean(state.session?.portalEnabled);
   document.querySelectorAll("[data-portal-only]").forEach(element => { element.hidden = !hasPortal; });
   const scopeWrap = document.querySelector(".scope-wrap");
-  if (scopeWrap) scopeWrap.hidden = !hasPortal || currentView === "home" || currentView === "settings";
+  if (scopeWrap) scopeWrap.hidden = !hasPortal || currentView === "settings" || (!isPortalHost && currentView === "home");
 }
 
 function render() {
@@ -771,7 +810,6 @@ function render() {
   if (state.error) { app.innerHTML = errorView(); document.querySelector("#retryButton")?.addEventListener("click", loadPortal); syncLanguageUi(); return; }
   const views = { home: homeView, portal: portalView, map: mapView, impact: impactView, filters: filtersView, "filter-detail": filterDetailView, followups: followupsView, issues: issuesView, settings: settingsView };
   if (!isPortalHost && currentView !== "settings") currentView = "home";
-  if (isPortalHost && currentView === "home") currentView = "portal";
   if (!state.session?.portalEnabled && portalViews.has(currentView)) currentView = "home";
   if (!views[currentView]) currentView = "home";
   applyPartnerBrand();
