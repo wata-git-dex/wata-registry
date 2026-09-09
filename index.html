@@ -13,7 +13,7 @@
   <link rel="icon" href="/assets/registry/icon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/assets/registry/apple-touch-icon.png" sizes="180x180">
   <link rel="stylesheet" href="assets/vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="styles.css?v=25">
+  <link rel="stylesheet" href="styles.css?v=26">
   <title>W.A.T.A. Filter Registry</title>
 </head>
 <body>
@@ -64,6 +64,15 @@
   <aside class="menu-panel menu-drawer" id="menuPanel" aria-label="W.A.T.A. menu" aria-hidden="true" hidden>
     <div class="drawer-head"><div class="profile menu-profile" id="profileButton" data-no-translate><span class="avatar">··</span><span><strong>Loading</strong><small>Checking access</small></span></div><button class="close-button" id="closeMenu" type="button" aria-label="Close menu">×</button></div>
     <nav class="drawer-nav">
+      <p class="menu-section-label" data-portal-only>Filter Registry</p>
+      <div class="menu-group" data-portal-only>
+        <button class="menu-action" data-view="home"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1v-8Z"/></svg><span><strong>Home</strong><small>Registry overview</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="map"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/></svg><span><strong>Map</strong><small>Authorized filter locations</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="impact"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C8.6 8 6 11.1 6 15a6 6 0 0 0 12 0c0-3.9-2.6-7-6-12Z"/></svg><span><strong>Impact</strong><small>Program totals and signals</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="filters"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6v3l2 2v11a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2V3Z"/><path d="M8 10h8M9.5 14h5M10 18h4"/></svg><span><strong>Filters</strong><small>Installed and inventory records</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="followups"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/></svg><span><strong>Follow-ups</strong><small>Schedule and lifecycles</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+        <button class="menu-action" data-view="issues"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17.5v.1"/></svg><span><strong>Issues</strong><small>Portal-visible data review</small></span><i class="menu-chevron" aria-hidden="true"></i></button>
+      </div>
       <p class="menu-section-label">Account &amp; settings</p>
       <div class="menu-group">
         <a class="menu-action" href="https://community.cleanwata.org/#profile" target="_blank" rel="noopener noreferrer"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span><strong>W.A.T.A. profile</strong><small>Open your shared app profile</small></span><i class="menu-external" aria-hidden="true">↗</i></a>
@@ -73,7 +82,7 @@
         <button class="menu-action" data-view="settings"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg><span><strong>Settings &amp; help</strong><small>How the registry works</small></span></button>
       </div>
       <a class="menu-action sign-out-action drawer-signout" href="/cdn-cgi/access/logout"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5"/><path d="m15 8 4 4-4 4M19 12H8"/></svg><span><strong>Sign out</strong><small>End your secure Registry session</small></span></a>
-      <div class="menu-version"><span>W.A.T.A. Registry</span><strong>v1.4</strong></div>
+      <div class="menu-version"><span>W.A.T.A. Registry</span><strong>v1.5</strong></div>
     </nav>
   </aside>
 
@@ -86,6 +95,6 @@
   </nav>
 
   <script src="assets/vendor/leaflet/leaflet.js" defer></script>
-  <script type="module" src="app.js?v=28"></script>
+  <script type="module" src="app.js?v=29"></script>
 </body>
 </html>
