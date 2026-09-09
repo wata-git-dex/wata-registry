@@ -111,7 +111,8 @@ main { min-width: 0; }
 .scope-wrap { display: flex; align-items: center; gap: 10px; }
 .scope-wrap label { color: var(--muted); font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
 .scope-wrap select { min-width: 190px; padding: 10px 34px 10px 12px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 11px; font-weight: 750; }
-.theme-icon { width: 18px; color: var(--ocean); font-size: 17px; text-align: center; }
+.theme-icon { display: grid; place-items: center; width: 20px; color: var(--ocean); }
+.theme-icon svg, .utility-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .profile { display: flex; align-items: center; gap: 10px; margin-left: 10px; padding: 4px; color: var(--ink); background: transparent; border: 0; text-align: left; }
 .profile > span:last-child { display: grid; gap: 2px; }
 .profile small { color: var(--muted); }
@@ -122,7 +123,6 @@ main { min-width: 0; }
 .language-picker { position: relative; }
 .language-button { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 13px; }
 .language-button:hover { background: var(--surface-soft); border-color: color-mix(in srgb, var(--ocean) 45%, var(--line)); }
-.language-globe { font-size: 18px; line-height: 1; }
 .language-menu { position: absolute; top: calc(100% + 9px); right: 0; z-index: 45; width: 190px; padding: 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
 .language-menu button { display: grid; grid-template-columns: 26px 1fr 18px; align-items: center; gap: 8px; width: 100%; padding: 10px; color: var(--ink); background: transparent; border: 0; border-radius: 10px; text-align: left; }
 .language-menu button:hover, .language-menu button.active { background: var(--surface-soft); }
@@ -131,21 +131,24 @@ main { min-width: 0; }
 .language-check { visibility: hidden; color: var(--green); font-weight: 900; }
 .language-menu button.active .language-check { visibility: visible; }
 .menu-button { display: grid; place-content: center; gap: 4px; width: 44px; height: 44px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 13px; }
-.menu-button span { display: block; width: 19px; height: 2px; background: currentColor; border-radius: 3px; }
 .drawer-scrim { position: fixed; inset: 0; z-index: 79; background: rgba(3,12,24,.62); backdrop-filter: blur(3px); }
-.menu-panel { position: fixed; inset: 0 0 0 auto; z-index: 80; width: min(390px, 100vw); padding: calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom)); overflow-y: auto; color: var(--ink); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -24px 0 60px rgba(5,20,38,.28); }
+.menu-panel { position: fixed; inset: 0 0 0 auto; z-index: 80; width: min(390px, 100vw); padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; color: var(--ink); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -24px 0 60px rgba(5,20,38,.28); }
 .menu-panel[hidden] { display: none; }
 .drawer-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .menu-profile { width: 100%; min-width: 0; margin: 0; padding: 4px; }
 .drawer-head .menu-profile > span:last-child { display: grid; }
-.close-button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); border-radius: 50%; font-size: 26px; line-height: 1; }
+.close-button { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; color: var(--ink); background: var(--surface-soft); border: 1px solid var(--line); border-radius: 50%; }
 .drawer-nav { display: grid; }
-.menu-section-label { margin: 16px 5px 7px; color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+.menu-section-label { margin: 22px 5px 7px; color: var(--muted); font-size: 10px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
 .menu-group { overflow: hidden; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 18px; }
 .menu-action { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 10px; color: var(--ink); background: transparent; border: 0; border-radius: 11px; text-align: left; }
 .menu-action { text-decoration: none; }
-.menu-action:hover { background: var(--surface-soft); }
-.menu-group > .menu-action { min-height: 62px; padding: 12px 14px; border-bottom: 1px solid var(--line); border-radius: 0; }
+.menu-action:hover { background: color-mix(in srgb, var(--partner-accent) 6%, var(--surface-soft)); }
+.menu-action.active, .menu-action[aria-current="page"] { color: var(--partner-accent); background: color-mix(in srgb, var(--partner-accent) 10%, var(--surface-soft)); }
+[data-theme="dark"] .menu-action.active, [data-theme="dark"] .menu-action[aria-current="page"] { color: var(--water); background: color-mix(in srgb, var(--water) 10%, var(--surface-soft)); }
+.menu-action:focus-visible, .language-button:focus-visible, .menu-button:focus-visible, .close-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--partner-accent) 28%, transparent); outline-offset: 2px; }
+.menu-action:disabled { cursor: not-allowed; opacity: .62; }
+.menu-group > .menu-action { min-height: 56px; padding: 11px 14px; border-bottom: 1px solid var(--line); border-radius: 0; }
 .menu-group > .menu-action:last-child { border-bottom: 0; }
 .menu-action > span:last-of-type { display: grid; flex: 1; gap: 2px; }
 .menu-action > .theme-icon { display: block; flex: 0 0 21px; }
@@ -519,6 +522,7 @@ tr:last-child td { border-bottom: 0; }
   .menu-profile { display: flex; }
   .avatar { width: 36px; height: 36px; }
   .content { padding: 20px 14px 100px; }
+  .menu-panel { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
   .command-head { align-items: stretch; flex-direction: column; margin-bottom: 17px; }
   .command-head h1 { font-size: 42px; }
   .command-sync { min-width: 0; }

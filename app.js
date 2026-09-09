@@ -1,5 +1,5 @@
 import { partnerBranding } from "./partner-branding.js";
-import { formatDate, formatNumber, normalizeLanguage, translateText } from "./i18n.js";
+import { formatDate, formatNumber, normalizeLanguage, translateText } from "./i18n.js?v=2";
 
 let portalBranding = { ...partnerBranding };
 
@@ -67,7 +67,9 @@ const icons = {
   people: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 10 0v2M16 4a3 3 0 0 1 0 6M15 14a5 5 0 0 1 6 4v2"/></svg>`,
   globe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>`,
   map: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/><circle cx="15" cy="11" r="2"/></svg>`,
-  phone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>`
+  phone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>`,
+  sun: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`,
+  moon: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z"/></svg>`
 };
 
 function escapeHtml(value) {
@@ -154,6 +156,12 @@ function syncLanguageControl() {
 
 function setMenuOpen(open) {
   if (!menuPanel || !menuButton) return;
+  const drawerLanguageButton = document.querySelector("#drawerLanguageButton");
+  const drawerLanguagePanel = document.querySelector("#drawerLanguagePanel");
+  if (drawerLanguageButton && drawerLanguagePanel) {
+    drawerLanguagePanel.hidden = true;
+    drawerLanguageButton.setAttribute("aria-expanded", "false");
+  }
   menuPanel.hidden = !open;
   menuPanel.setAttribute("aria-hidden", String(!open));
   menuButton.setAttribute("aria-expanded", String(open));
@@ -315,7 +323,7 @@ function applyTheme(theme, persist = true) {
   const dark = theme === "dark";
   themeToggle.setAttribute("aria-pressed", String(dark));
   themeToggle.setAttribute("aria-label", translateText("Switch color theme", currentLanguage));
-  themeToggle.querySelector(".theme-icon").textContent = dark ? "☾" : "☀";
+  themeToggle.querySelector(".theme-icon").innerHTML = dark ? icons.moon : icons.sun;
   themeToggle.querySelector(".theme-label").textContent = currentLanguage === "es"
     ? `Modo ${translateText(dark ? "Dark" : "Light", currentLanguage).toLowerCase()}`
     : (dark ? "Dark" : "Light");
@@ -1165,6 +1173,11 @@ function render() {
   syncHubNavigation();
   const activeView = currentView === "filter-detail" ? filterReturnView : currentView;
   document.querySelectorAll("[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === activeView));
+  document.querySelectorAll(".menu-action[data-view]").forEach(button => {
+    const active = button.dataset.view === activeView;
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
   document.querySelector("#filterSearch")?.addEventListener("input", event => {
     filterSearch = event.target.value;
     document.querySelector("#filterRows").innerHTML = filterRows(filteredFilterRows());
@@ -1317,7 +1330,7 @@ document.addEventListener("click", event => {
   }
   if (event.target.closest("#closeMenu") || event.target === drawerScrim) {
     setMenuOpen(false);
-    menuButton.focus({ preventScroll: true });
+    requestAnimationFrame(() => menuButton.focus({ preventScroll: true }));
     return;
   }
   if (event.target.closest("#drawerLanguageButton")) { toggleDrawerPanel("drawerLanguageButton", "drawerLanguagePanel"); return; }
