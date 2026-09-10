@@ -29,3 +29,13 @@ test("Registry drawer behavior preserves state and accessibility", () => {
 test("a successful Registry bootstrap cannot strand an authorized user on Home", () => {
   assert.match(app, /isPortalHost && authenticatedSession[\s\S]*?portalEnabled: true/);
 });
+
+test("Registry corrections keep truthful map and schedule populations", () => {
+  assert.match(app, /row\.followupEnrolled === true/);
+  assert.match(app, /Upcoming · nearest first/);
+  assert.match(app, /Only actual enrolled schedule records are listed/);
+  assert.match(app, /Approximate — community location/);
+  assert.match(app, /recorded[\s\S]*approximate[\s\S]*unlocated/);
+  assert.match(css, /\.registry-table \{[^}]*table-layout: fixed/);
+  assert.match(css, /\.command-main-grid \{[^}]*repeat\(2/);
+});
