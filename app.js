@@ -1225,7 +1225,10 @@ function render() {
 }
 
 function applyBootstrap(body) {
-  state.session = body.session;
+  const authenticatedSession = body.session || null;
+  state.session = isPortalHost && authenticatedSession
+    ? { ...authenticatedSession, portalEnabled: true }
+    : authenticatedSession;
   state.tools = body.tools || [];
   for (const partner of body.partners || []) {
     portalBranding[partner.slug] = { ...partner, logoAlt: `${partner.name} logo` };

@@ -25,3 +25,7 @@ test("Registry drawer behavior preserves state and accessibility", () => {
   assert.match(css, /\.menu-action:focus-visible/);
   assert.match(css, /\[data-theme="dark"\] \.menu-action\.active/);
 });
+
+test("a successful Registry bootstrap cannot strand an authorized user on Home", () => {
+  assert.match(app, /isPortalHost && authenticatedSession[\s\S]*?portalEnabled: true/);
+});
