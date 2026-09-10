@@ -628,7 +628,7 @@ function mapMarkerState(row) {
   const dateKey = value => `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   const lifecycle = lifecycleStatus(row);
   const dueKey = lifecycle.due;
-  if (isInventory(row)) return { key: "inventory", label: "To be distributed", color: "#a95ed1", priority: 1 };
+  if (isInventory(row)) return { key: "inventory", label: "To be distributed", color: "#e85aad", priority: 1 };
   if (hasOpenIssue(row)) return { key: "issue", label: "Data issue", color: "#f2c94c", priority: 6 };
   if (!lifecycle.staleSchedule && /^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey < dateKey(today)) return { key: "overdue", label: "Missing follow-up", color: "#ed8624", priority: 5 };
   if (!lifecycle.staleSchedule && /^\d{4}-\d{2}-\d{2}$/.test(dueKey) && dueKey >= dateKey(today) && dueKey <= dateKey(dueSoon)) return { key: "due-soon", label: "Follow-up due soon", color: "#e3b72f", priority: 4 };
@@ -662,7 +662,7 @@ function mapView() {
         <span><i style="--marker:#e3b72f"></i>Due soon <b>${number(counts["due-soon"])}</b></span>
         <span><i style="--marker:#ed8624"></i>Missing follow-up <b>${number(counts.overdue)}</b></span>
         <span><i style="--marker:#f2c94c"></i>Data issue <b>${number(counts.issue)}</b></span>
-        <span><i style="--marker:#a95ed1"></i>To be distributed <b>${number(counts.inventory)}</b></span>
+        <span><i style="--marker:#e85aad"></i>To be distributed <b>${number(counts.inventory)}</b></span>
       </div>
       <div id="registryMap" class="registry-map" role="region" aria-label="Interactive map of authorized water filters"><div class="map-loading">Loading secure map…</div></div>
       <p class="map-footnote">Colors show each filter\'s current operational state, not historical survey totals. Map tiles require an internet connection. Filter records and permissions remain read-only and come from Airtable.</p>
