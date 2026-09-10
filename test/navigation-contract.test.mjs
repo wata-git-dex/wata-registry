@@ -39,3 +39,10 @@ test("Registry corrections keep truthful map and schedule populations", () => {
   assert.match(css, /\.registry-table \{[^}]*table-layout: fixed/);
   assert.match(css, /\.command-main-grid \{[^}]*repeat\(2/);
 });
+
+test("recent activity consolidates same-day lifecycle transitions", () => {
+  assert.match(app, /const byDate = new Map\(\)/);
+  assert.match(app, /Drop-off → Distributed/);
+  assert.match(app, /Drop-off · In inventory/);
+  assert.match(css, /\.activity-dot\.transition/);
+});

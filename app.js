@@ -1,5 +1,5 @@
 import { partnerBranding } from "./partner-branding.js";
-import { formatDate, formatNumber, normalizeLanguage, translateText } from "./i18n.js?v=3";
+import { formatDate, formatNumber, normalizeLanguage, translateText } from "./i18n.js?v=4";
 
 let portalBranding = { ...partnerBranding };
 
@@ -520,15 +520,42 @@ function commandFollowupQueue() {
 
 function commandRecentActivityPanel() {
   const cutoff = dateValue(todayKey()) - (30 * 86400000);
-  const activity = countryScoped(state.filters).flatMap(row => lifecycleEvents(row).map(event => ({ row, event })))
-    .filter(({ event }) => dateValue(event.date) >= cutoff && dateValue(event.date) <= dateValue(todayKey()))
-    .sort((a, b) => dateValue(b.event.date) - dateValue(a.event.date) || String(a.row.id).localeCompare(String(b.row.id)))
+  const activity = countryScoped(state.filters).flatMap(row => {
+    const recent = lifecycleEvents(row).filter(event => dateValue(event.date) >= cutoff && dateValue(event.date) <= dateValue(todayKey()));
+    const byDate = new Map();
+    for (const event of recent) {
+      const events = byDate.get(event.date) || [];
+      events.push(event);
+      byDate.set(event.date, events);
+    }
+    return [...byDate.entries()].flatMap(([eventDate, events]) => {
+      const followups = events.filter(event => event.type === "Follow-Up").map(event => ({
+        row,
+        event,
+        date: eventDate,
+        label: lifecycleEventLabel(event, lifecycleFollowupNumber(row, event)),
+        tone: eventTypeClass(event)
+      }));
+      const distribution = events.find(event => event.type === "Distribution");
+      const dropoff = events.find(event => event.type === "Drop-Off");
+      const operational = distribution && dropoff
+        ? [{ row, event: distribution, date: eventDate, label: "Drop-off → Distributed", tone: "transition" }]
+        : [distribution, dropoff].filter(Boolean).map(event => ({
+            row,
+            event,
+            date: eventDate,
+            label: event.type === "Drop-Off" ? "Drop-off · In inventory" : lifecycleEventLabel(event),
+            tone: eventTypeClass(event)
+          }));
+      return [...followups, ...operational];
+    });
+  })
+    .sort((a, b) => dateValue(b.date) - dateValue(a.date) || String(a.row.id).localeCompare(String(b.row.id)) || a.label.localeCompare(b.label))
     .slice(0, 8);
   return `<section class="command-panel command-recent">
-    <div class="command-panel-head"><div><span class="command-panel-icon">${icons.impact}</span><div><h2>Recent field activity</h2><p>Recorded distributions and follow-ups from the last 30 days.</p></div></div><button class="link-button" data-view="impact">Open impact</button></div>
-    <div class="recent-activity-list">${activity.length ? activity.map(({ row, event }) => {
-      const label = lifecycleEventLabel(event, lifecycleFollowupNumber(row, event));
-      return `<button type="button" class="recent-activity-row" data-filter-id="${escapeHtml(row.recordId)}"><span class="activity-dot ${eventTypeClass(event)}"></span><span><strong>${escapeHtml(label)} · ${display(row.id)}</strong><small>${countryInfo(row).flag} ${display(row.community)}${event.surveyor ? ` · ${display(event.surveyor)}` : ""}</small></span><time>${date(event.date)}</time></button>`;
+    <div class="command-panel-head"><div><span class="command-panel-icon">${icons.impact}</span><div><h2>Recent field activity</h2><p>Recorded drop-offs, distributions, and follow-ups from the last 30 days.</p></div></div><button class="link-button" data-view="impact">Open impact</button></div>
+    <div class="recent-activity-list">${activity.length ? activity.map(({ row, event, date: activityDate, label, tone }) => {
+      return `<button type="button" class="recent-activity-row" data-filter-id="${escapeHtml(row.recordId)}"><span class="activity-dot ${escapeHtml(tone)}"></span><span><strong>${escapeHtml(label)} · ${display(row.id)}</strong><small>${countryInfo(row).flag} ${display(row.community)}${event.surveyor ? ` · ${display(event.surveyor)}` : ""}</small></span><time>${date(activityDate)}</time></button>`;
     }).join("") : `<div class="empty-state">No recorded field activity in the last 30 days.</div>`}</div>
   </section>`;
 }

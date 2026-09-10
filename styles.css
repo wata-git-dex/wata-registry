@@ -232,6 +232,7 @@ button.command-kpi:hover { border-color: color-mix(in srgb,var(--water) 48%,var(
 .activity-dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; box-shadow: 0 0 0 2px color-mix(in srgb,var(--green) 18%,transparent); }
 .activity-dot.follow-up { background: #367ee8; box-shadow: 0 0 0 2px color-mix(in srgb,#367ee8 18%,transparent); }
 .activity-dot.drop-off { background: #a95ed1; box-shadow: 0 0 0 2px color-mix(in srgb,#a95ed1 18%,transparent); }
+.activity-dot.transition { background: linear-gradient(90deg,#a95ed1 0 50%,var(--green) 50% 100%); box-shadow: 0 0 0 2px color-mix(in srgb,var(--green) 18%,transparent); }
 .hero { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, .6fr); gap: 24px; padding: clamp(24px, 4vw, 42px); color: white; background-color: var(--navy); background-image: linear-gradient(125deg, rgba(48,82,164,.96), rgba(18,36,73,.97)), url("assets/brand/topography.svg"); background-size: auto, 720px auto; border-radius: 28px; box-shadow: var(--shadow); }
 .hero::after { content: ""; position: absolute; width: 360px; height: 360px; right: -170px; top: -190px; border: 62px solid rgba(118, 222, 231, .12); border-radius: 50%; }
 .eyebrow { margin: 0 0 11px; color: #8de9ff; font-size: 12px; font-weight: 850; text-transform: uppercase; letter-spacing: .13em; }
