@@ -132,7 +132,7 @@ main { min-width: 0; }
 .language-menu button.active .language-check { visibility: visible; }
 .menu-button { display: grid; place-content: center; gap: 4px; width: 44px; height: 44px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 13px; }
 .drawer-scrim { position: fixed; inset: 0; z-index: 79; background: rgba(3,12,24,.62); backdrop-filter: blur(3px); }
-.menu-panel { position: fixed; inset: 0 0 0 auto; z-index: 80; width: min(390px, 100vw); padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; color: var(--ink); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -24px 0 60px rgba(5,20,38,.28); }
+.menu-panel { position: fixed; inset: 0 0 0 auto; z-index: 80; width: min(390px, 100vw); height: 100dvh; padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) calc(20px + env(safe-area-inset-left)); overflow-y: auto; color: var(--ink); background: var(--surface); border-left: 1px solid var(--line); box-shadow: -24px 0 60px rgba(5,20,38,.28); }
 .menu-panel[hidden] { display: none; }
 .drawer-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .menu-profile { width: 100%; min-width: 0; margin: 0; padding: 4px; }
@@ -539,7 +539,7 @@ tr:last-child td { border-bottom: 0; }
   .rail { display: none; }
   .topbar {
     min-height: calc(68px + env(safe-area-inset-top));
-    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    padding: calc(10px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 10px calc(16px + env(safe-area-inset-left));
   }
   .mobile-brand { display: flex; align-items: center; gap: 8px; padding: 0; color: var(--ink); background: transparent; border: 0; text-align: left; }
   .mobile-brand .wata-logo { width: 32px; height: 32px; flex-basis: 32px; }
@@ -552,8 +552,8 @@ tr:last-child td { border-bottom: 0; }
   .top-menu { margin-left: auto; }
   .menu-profile { display: flex; }
   .avatar { width: 36px; height: 36px; }
-  .content { padding: 20px 14px 100px; }
-  .menu-panel { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+  .content { padding: 20px calc(14px + env(safe-area-inset-right)) 100px calc(14px + env(safe-area-inset-left)); }
+  .menu-panel { padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); }
   .command-head { align-items: stretch; flex-direction: column; margin-bottom: 17px; }
   .command-head h1 { font-size: 42px; }
   .command-sync { min-width: 0; }
@@ -567,7 +567,7 @@ tr:last-child td { border-bottom: 0; }
   .command-queue-row { grid-template-columns: 64px minmax(0,1fr); padding: 11px 0; }
   .command-queue-row > span:last-child { grid-column: 2; text-align: left; }
   .command-impact-row { grid-template-columns: minmax(104px,1fr) minmax(80px,1.4fr) 48px; gap: 8px; }
-  .site-footer { margin: 0 14px; padding-bottom: 104px; }
+  .site-footer { margin: 0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left)); padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
   .hero { grid-template-columns: 1fr; padding: 25px 21px; border-radius: 22px; }
   h1 { font-size: 39px; }
   .hero-copy { font-size: 14px; }
@@ -576,7 +576,7 @@ tr:last-child td { border-bottom: 0; }
   .app-card h3 { margin-top: 18px; }
   .stat { padding: 16px; }
   .section-head { margin-top: 27px; }
-  .mobile-nav { position: fixed; left: 10px; right: 10px; bottom: calc(9px + env(safe-area-inset-bottom)); z-index: 30; display: flex; height: 66px; padding: 7px; background: rgba(16,47,67,.96); border: 1px solid rgba(255,255,255,.12); border-radius: 20px; box-shadow: 0 18px 50px rgba(12,39,56,.3); backdrop-filter: blur(16px); }
+  .mobile-nav { position: fixed; left: calc(10px + env(safe-area-inset-left)); right: calc(10px + env(safe-area-inset-right)); bottom: calc(9px + env(safe-area-inset-bottom)); z-index: 30; display: flex; height: 66px; padding: 7px; background: rgba(16,47,67,.96); border: 1px solid rgba(255,255,255,.12); border-radius: 20px; box-shadow: 0 18px 50px rgba(12,39,56,.3); backdrop-filter: blur(16px); }
   .mobile-nav button { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 3px; padding: 5px; color: #97b3bf; background: transparent; border: 0; font-size: 9px; font-weight: 800; }
   .mobile-nav .nav-icon { width: 20px; height: 20px; }
   .mobile-nav button.active { color: #74dbe3; }

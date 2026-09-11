@@ -46,3 +46,10 @@ test("recent activity consolidates same-day lifecycle transitions", () => {
   assert.match(app, /Drop-off · In inventory/);
   assert.match(css, /\.activity-dot\.transition/);
 });
+
+test("mobile Registry chrome respects every device safe area", () => {
+  assert.match(html, /viewport-fit=cover/);
+  assert.match(css, /\.topbar[\s\S]*?safe-area-inset-top[\s\S]*?safe-area-inset-right[\s\S]*?safe-area-inset-left/);
+  assert.match(css, /\.menu-panel[^}]*height: 100dvh[^}]*safe-area-inset-top[^}]*safe-area-inset-right[^}]*safe-area-inset-bottom[^}]*safe-area-inset-left/);
+  assert.match(css, /\.mobile-nav[^}]*safe-area-inset-left[^}]*safe-area-inset-right[^}]*safe-area-inset-bottom/);
+});
